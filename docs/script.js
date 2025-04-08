@@ -1,4 +1,4 @@
-const API_URL = "https://free-game-scraper.onrender.com";
+const API_URL = "https://free-game-scraper.onrender.com/api";
 
 async function fetchGames() {
   const container = document.getElementById("games-container");
