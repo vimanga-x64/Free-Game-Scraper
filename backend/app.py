@@ -2,6 +2,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 import json
 import requests
+import os
 from bs4 import BeautifulSoup
 from pathlib import Path
 
