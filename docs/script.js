@@ -15,24 +15,33 @@ async function fetchGames() {
     ];
 
     sections.forEach(section => {
-      const title = document.createElement("h2");
-      title.textContent = section.label;
-      container.appendChild(title);
+      const sectionHeader = document.createElement("h2");
+      sectionHeader.textContent = section.label;
+      container.appendChild(sectionHeader);
 
-      const list = document.createElement("div");
-      list.className = "game-list";
+      ["pc", "console"].forEach(platform => {
+        const platformGames = data[section.key][platform];
+        if (!platformGames.length) return;
 
-      data[section.key].forEach(game => {
-        const item = document.createElement("div");
-        item.className = "game-item";
-        item.innerHTML = `
-          <img src="${game.thumbnail}" alt="${game.title}" class="thumbnail">
-          <a href="${game.link}" target="_blank">${game.title}</a>
-        `;
-        list.appendChild(item);
+        const platformHeader = document.createElement("h3");
+        platformHeader.textContent = platform.toUpperCase();
+        container.appendChild(platformHeader);
+
+        const list = document.createElement("div");
+        list.className = "game-list";
+
+        platformGames.forEach(game => {
+          const item = document.createElement("div");
+          item.className = "game-item";
+          item.innerHTML = `
+            <img src="${game.thumbnail}" alt="${game.title}" class="thumbnail">
+            <a href="${game.link}" target="_blank">${game.title}</a>
+          `;
+          list.appendChild(item);
+        });
+
+        container.appendChild(list);
       });
-
-      container.appendChild(list);
     });
   } catch (err) {
     container.innerHTML = "Failed to load games.";

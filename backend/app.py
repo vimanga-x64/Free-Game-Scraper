@@ -16,7 +16,7 @@ def get_free_games():
         "temporary": get_temporary_free_games()
     })
 
-# Render-friendly port binding
+# Render-compatible run config
 import os
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
