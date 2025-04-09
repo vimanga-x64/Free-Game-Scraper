@@ -22,6 +22,18 @@ async function fetchGames() {
         storeBlock.innerHTML = `<h3>${displayName}</h3>`;
         
         const list = document.createElement("ul");
+
+        if (games.length === 0) {
+          const li = document.createElement("li");
+          li.textContent = "No free games found right now.";
+          list.appendChild(li);
+        } else {
+          games.forEach(game => {
+            const li = document.createElement("li");
+            li.innerHTML = `<a href="${game.link}" target="_blank">${game.title}</a>`;
+            list.appendChild(li);
+          });
+        }
         
         // Add each game to the list
         games.forEach(game => {
