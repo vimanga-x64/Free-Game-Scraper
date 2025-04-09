@@ -7,6 +7,10 @@ async function fetchGames() {
   try {
     const response = await fetch(`${API_URL}/free-games`);
     const data = await response.json();
+    
+    // Debugging - Check if data is correct
+    console.log("Fetched Data:", data);
+
     container.innerHTML = "";
 
     const sections = [
@@ -44,6 +48,7 @@ async function fetchGames() {
       });
     });
   } catch (err) {
+    console.log("Error:", err); // Log any errors
     container.innerHTML = "Failed to load games.";
   }
 }

@@ -4,7 +4,7 @@ def get_permanent_free_games():
     try:
         response = requests.get("https://www.freetogame.com/api/games", timeout=10)
         data = response.json()
-        return {
+        permanent_games = {
             "pc": [
                 {
                     "title": game["title"],
@@ -12,8 +12,10 @@ def get_permanent_free_games():
                     "thumbnail": game["thumbnail"]
                 } for game in data
             ],
-            "console": []  # Currently no reliable API for console permanent games
+            "console": []  # No console games for now
         }
+        print("Permanent Games:", permanent_games)  # Debugging log
+        return permanent_games
     except Exception as e:
         print("Error fetching permanent games:", e)
         return { "pc": [], "console": [] }
@@ -25,11 +27,9 @@ def get_temporary_free_games():
         games = response.json()["data"]["Catalog"]["searchStore"]["elements"]
 
         free_now_pc = []
-
         for game in games:
             promos = game.get("promotions", {})
             offers = promos.get("promotionalOffers", [])
-
             if offers:
                 for offer in offers[0]["promotionalOffers"]:
                     if offer["discountSetting"]["discountPercentage"] == 0:
@@ -39,11 +39,12 @@ def get_temporary_free_games():
                             "thumbnail": game["keyImages"][0]["url"] if game["keyImages"] else ""
                         })
 
-        return {
+        temporary_games = {
             "pc": free_now_pc,
-            "console": []  # Placeholder for future support (e.g., scraping Xbox or PlayStation)
+            "console": []  # Placeholder for future console support
         }
-
+        print("Temporary Games:", temporary_games)  # Debugging log
+        return temporary_games
     except Exception as e:
         print("Error fetching temporary games:", e)
         return { "pc": [], "console": [] }
