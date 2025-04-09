@@ -30,15 +30,23 @@ async function fetchGames() {
       const sectionHeader = document.createElement("h2");
       sectionHeader.textContent = section.label;
       container.appendChild(sectionHeader);
-
+    
       ["pc", "console"].forEach(platform => {
         const platformGames = data[section.key][platform];
-        if (!platformGames.length) return;
-
+        
+        // Skip if no games and add message
+        if (!platformGames || platformGames.length === 0) {
+          const emptyMsg = document.createElement("p");
+          emptyMsg.textContent = `No ${section.key} ${platform} games available at this time.`;
+          emptyMsg.style.fontStyle = "italic";
+          emptyMsg.style.color = "#666";
+          container.appendChild(emptyMsg);
+          return;
+        }
+    
         const platformHeader = document.createElement("h3");
         platformHeader.textContent = platform.toUpperCase();
         container.appendChild(platformHeader);
-
         const list = document.createElement("div");
         list.className = "game-list";
 
