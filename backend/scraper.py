@@ -1,31 +1,48 @@
 import requests
 
-def scrape_freetogame_pc():
+def get_permanent_free_games():
     url = "https://www.freetogame.com/api/games"
     try:
         response = requests.get(url, timeout=10)
         data = response.json()
-        games = [
-            {"title": game["title"], "link": game["game_url"]}
-            for game in data if "pc" in game["platform"].lower()
-        ]
-        return games[:20]  # limit to top 20
+        return [
+            {
+                "title": game["title"],
+                "link": game["game_url"],
+                "thumbnail": game["thumbnail"],
+                "platform": "pc"
+            }
+            for game in data
+        ][:20]
     except Exception as e:
-        print("Error fetching FreeToGame:", e)
+        print("Error fetching permanent games:", e)
         return []
 
-def get_static_console_games():
-    return {
-        "playstation": [
-            {"title": "Fortnite", "link": "https://www.playstation.com/en-us/games/fortnite/"},
-            {"title": "Warframe", "link": "https://www.playstation.com/en-us/games/warframe/"},
-            {"title": "Call of Duty: Warzone", "link": "https://www.playstation.com/en-us/games/call-of-duty-warzone/"},
-            {"title": "Fall Guys", "link": "https://www.playstation.com/en-us/games/fall-guys/"}
-        ],
-        "xbox": [
-            {"title": "Fortnite", "link": "https://www.xbox.com/en-US/games/fortnite"},
-            {"title": "Warframe", "link": "https://www.xbox.com/en-US/games/warframe"},
-            {"title": "Call of Duty: Warzone", "link": "https://www.xbox.com/en-US/games/call-of-duty-warzone"},
-            {"title": "Fall Guys", "link": "https://www.xbox.com/en-US/games/fall-guys"}
-        ]
-    }
+def get_temporary_free_games():
+    # Example: only Epic Games (temporarily free) for now
+    try:
+        url = "https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=en-US&country=US&allowCountries=US"
+        response = requests.get(url, timeout=10)
+        data = response.json()
+
+        games = data["data"]["Catalog"]["searchStore"]["elements"]
+        free_now = []
+
+        for game in games:
+            promotions = game.get("promotions")
+            if not promotions:
+                continue
+
+            for promo in promotions.get("promotionalOffers", []):
+                for offer in promo.get("promotionalOffers", []):
+                    if offer.get("discountSetting", {}).get("discountPercentage") == 0:
+                        free_now.append({
+                            "title": game["title"],
+                            "link": f"https://store.epicgames.com/en-US/p/{game['productSlug']}",
+                            "thumbnail": game["keyImages"][0]["url"] if game["keyImages"] else "",
+                            "platform": "pc"
+                        })
+        return free_now[:10]
+    except Exception as e:
+        print("Error fetching temporary games:", e)
+        return []

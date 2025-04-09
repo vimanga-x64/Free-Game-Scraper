@@ -1,7 +1,6 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
-from scraper import scrape_freetogame_pc, get_static_console_games
-import os
+from scraper import get_permanent_free_games, get_temporary_free_games
 
 app = Flask(__name__)
 CORS(app)
@@ -12,15 +11,13 @@ def index():
 
 @app.route("/api/free-games")
 def get_free_games():
-    pc_games = {
-        "freetogame": scrape_freetogame_pc()
-    }
-    console_games = get_static_console_games()
     return jsonify({
-        "pc": pc_games,
-        "console": console_games
+        "permanent": get_permanent_free_games(),
+        "temporary": get_temporary_free_games()
     })
 
+# Render-friendly port binding
+import os
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
