@@ -1,13 +1,17 @@
-const API_URL = "https://free-game-scraper.onrender.com";
+const API_URL = "https://free-game-scraper.onrender.com/api";
 
 async function fetchGames() {
   const container = document.getElementById("games-container");
   container.innerHTML = "Loading...";
 
   try {
-    const response = await fetch("https://free-game-scraper.onrender.com/api/free-games");
+    const response = await fetch(`${API_URL}/free-games`, {
+      mode: 'cors',  // Explicitly request CORS
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
     
-    // Check if the response is OK (status 200-299)
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -53,11 +57,6 @@ async function fetchGames() {
     });
   } catch (err) {
     console.error("Full Error:", err);
-    console.error("Error Details:", {
-      message: err.message,
-      stack: err.stack,
-      name: err.name
-    });
     container.innerHTML = "Failed to load games. Check console for details.";
   }
 }

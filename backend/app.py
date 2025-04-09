@@ -3,10 +3,15 @@ from flask_cors import CORS
 from scraper import get_permanent_free_games, get_temporary_free_games
 
 app = Flask(__name__)
+
+# Configure CORS properly
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["https://vimanga-x64.github.io"],
-        "methods": ["GET"],
+        "origins": [
+            "https://vimanga-x64.github.io",
+            "http://localhost:*"  # For local testing
+        ],
+        "methods": ["GET", "OPTIONS"],
         "allow_headers": ["Content-Type"]
     }
 })
@@ -17,13 +22,14 @@ def index():
 
 @app.route("/api/free-games")
 def get_free_games():
-    return jsonify({
+    response = jsonify({
         "permanent": get_permanent_free_games(),
         "temporary": get_temporary_free_games()
     })
+    # Manually add CORS headers for extra assurance
+    response.headers.add('Access-Control-Allow-Origin', 'https://vimanga-x64.github.io')
+    return response
 
-# Render-compatible run config
-import os
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
