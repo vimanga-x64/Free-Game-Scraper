@@ -1,6 +1,7 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 from scraper import get_permanent_free_games, get_temporary_free_games
+import os
 
 app = Flask(__name__)
 
