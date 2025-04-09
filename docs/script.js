@@ -5,10 +5,14 @@ async function fetchGames() {
   container.innerHTML = "Loading...";
 
   try {
-    const response = await fetch(`${API_URL}/free-games`);
-    const data = await response.json();
+    const response = await fetch("https://free-game-scraper.onrender.com/api/free-games");
     
-    // Debugging - Check if data is correct
+    // Check if the response is OK (status 200-299)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
     console.log("Fetched Data:", data);
 
     container.innerHTML = "";
@@ -48,8 +52,13 @@ async function fetchGames() {
       });
     });
   } catch (err) {
-    console.log("Error:", err); // Log any errors
-    container.innerHTML = "Failed to load games.";
+    console.error("Full Error:", err);
+    console.error("Error Details:", {
+      message: err.message,
+      stack: err.stack,
+      name: err.name
+    });
+    container.innerHTML = "Failed to load games. Check console for details.";
   }
 }
 

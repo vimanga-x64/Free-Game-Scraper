@@ -3,7 +3,13 @@ from flask_cors import CORS
 from scraper import get_permanent_free_games, get_temporary_free_games
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["https://vimanga-x64.github.io"],
+        "methods": ["GET"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
 @app.route("/")
 def index():
