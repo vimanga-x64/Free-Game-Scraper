@@ -63,7 +63,6 @@ function displayGames(data) {
     ["pc", "console"].forEach(platform => {
       const platformData = data[section.key][platform];
       
-      // Skip if no data or empty object
       if (!platformData || Object.keys(platformData).length === 0) {
         const emptyMsg = document.createElement("p");
         emptyMsg.className = "empty-message";
@@ -76,14 +75,14 @@ function displayGames(data) {
       platformHeader.textContent = `${platform.toUpperCase()} Games`;
       sectionDiv.appendChild(platformHeader);
 
-      // Display by store (for temporary games) or genre (for permanent)
-      let hasGames = false;
-      for (const [category, games] of Object.entries(platformData)) {
+      // For temporary games, show by store. For permanent, show by genre
+      const groupBy = section.key === "temporary" ? "store" : "genre";
+      
+      for (const [groupName, games] of Object.entries(platformData)) {
         if (games && games.length > 0) {
-          hasGames = true;
-          const categoryHeader = document.createElement("h4");
-          categoryHeader.textContent = `${capitalizeFirstLetter(category)}`;
-          sectionDiv.appendChild(categoryHeader);
+          const groupHeader = document.createElement("h4");
+          groupHeader.textContent = `${capitalizeFirstLetter(groupName)}`;
+          sectionDiv.appendChild(groupHeader);
 
           const gameList = document.createElement("div");
           gameList.className = "game-list";
@@ -92,7 +91,7 @@ function displayGames(data) {
             const item = document.createElement("div");
             item.className = "game-item";
             
-            // Handle missing thumbnails and force HTTPS
+            // Handle thumbnails - force HTTPS and provide fallback
             let thumbnailUrl = game.thumbnail || "https://via.placeholder.com/300x200?text=No+Image";
             thumbnailUrl = thumbnailUrl.replace('http://', 'https://');
             
@@ -111,8 +110,8 @@ function displayGames(data) {
             }
             
             item.innerHTML = `
-              <div class="game-thumbnail">
-                <img src="${thumbnailUrl}" alt="${game.title}" 
+              <div class="game-thumbnail-container">
+                <img src="${thumbnailUrl}" alt="${game.title}" class="game-thumbnail"
                      onerror="this.onerror=null;this.src='https://via.placeholder.com/300x200?text=Image+Not+Available'">
                 <span class="store-badge ${game.store?.toLowerCase() || 'unknown'}">
                   ${getStoreIcon(game.store)}
@@ -129,13 +128,6 @@ function displayGames(data) {
           sectionDiv.appendChild(gameList);
         }
       }
-
-      if (!hasGames) {
-        const emptyMsg = document.createElement("p");
-        emptyMsg.className = "empty-message";
-        emptyMsg.textContent = `No ${section.key} ${platform} games found.`;
-        sectionDiv.appendChild(emptyMsg);
-      }
     });
 
     container.appendChild(sectionDiv);
@@ -149,27 +141,14 @@ function capitalizeFirstLetter(string) {
 
 function getStoreIcon(store) {
   const icons = {
-    'epic': '🎮',
-    'steam': '♨️',
-    'gog': '🛒',
-    'playstation': '🎮',
-    'xbox': '🎮',
-    'nintendo': '🎮'
+    'epic': 'EPIC',
+    'steam': 'STEAM',
+    'gog': 'GOG',
+    'playstation': 'PS',
+    'xbox': 'XBOX',
+    'nintendo': 'SWITCH'
   };
-  return icons[store?.toLowerCase()] || '🛍️';
-}
-
-function formatDate(dateString) {
-  try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
-    });
-  } catch (e) {
-    console.error("Error formatting date:", e);
-    return "";
-  }
+  return icons[store?.toLowerCase()] || store?.toUpperCase() || 'STORE';
 }
 
 // Initialize when page loads
