@@ -154,6 +154,16 @@ function createCarousel(games, store, sectionType) {
     carouselContent.appendChild(createGameCard(gameWithStore, sectionType === 'temporary'));
   });
   
+  // Only add navigation buttons if content overflows
+  const checkOverflow = () => {
+    const hasOverflow = carouselContent.scrollWidth > carouselContent.clientWidth;
+    carousel.classList.toggle('has-overflow', hasOverflow);
+  };
+  
+  // Check initially and on window resize
+  checkOverflow();
+  window.addEventListener('resize', checkOverflow);
+  
   // Add navigation buttons
   const prevBtn = document.createElement("button");
   prevBtn.className = "carousel-btn prev";
@@ -270,29 +280,15 @@ function createGameCard(game, showEndDate = false) {
   const thumbnailUrl = game.thumbnail?.replace('http://', 'https://') || 
     'https://via.placeholder.com/300x200?text=No+Image';
   
-  let priceInfo = '';
-  if (game.discountPercentage > 0 && game.originalPrice) {
-    priceInfo = `
-      <div class="price-info">
-        <span class="original-price">$${game.originalPrice.toFixed(2)}</span>
-        ${game.finalPrice ? `<span class="final-price">$${game.finalPrice.toFixed(2)}</span>` : ''}
-        <span class="discount-price">-${game.discountPercentage}%</span>
-      </div>
-    `;
-  }
-  
   item.innerHTML = `
     <div class="game-thumbnail">
       <img src="${thumbnailUrl}" alt="${game.title}" 
            onerror="this.src='https://via.placeholder.com/300x200?text=Image+Not+Available'">
-      ${game.discountPercentage > 0 ? `<span class="discount-badge">-${game.discountPercentage}%</span>` : ''}
     </div>
     <div class="game-info">
       <a href="${game.link}" target="_blank" class="game-title">${game.title}</a>
-      ${priceInfo}
       <div class="game-meta">
-        <span class="game-store">${game.store || 'Unknown'}</span>
-        ${showEndDate && game.end_date ? `<span class="end-date">Until ${formatDate(game.end_date)}</span>` : ''}
+        <span class="game-store ${game.store.toLowerCase()}">${game.store.toUpperCase()}</span>
       </div>
     </div>
   `;
