@@ -259,6 +259,7 @@ def get_discounted_games():
                     "thumbnail": game["header_image"],
                     "discountPercentage": game["discount_percent"],
                     "originalPrice": game.get("original_price", 0) / 100 if game.get("original_price") else None,
+                    "finalPrice": (game.get("original_price", 0) * (100 - game.get("discount_percent", 0)) / 10000) if game.get("original_price") else None,
                     "store": "steam"
                 })
     except Exception as e:
@@ -276,9 +277,10 @@ def get_discounted_games():
                 discounted["gog"].append({
                     "title": game["title"],
                     "link": "https://www.gog.com" + game["url"],
-                    "thumbnail": game["image"],
+                    "thumbnail": "https:" + game["image"] + ".jpg",  # Fixed thumbnail URL
                     "discountPercentage": game["price"]["discountPercentage"],
                     "originalPrice": float(game["price"]["baseAmount"]) if game["price"]["baseAmount"] else None,
+                    "finalPrice": float(game["price"]["finalAmount"]) if game["price"]["finalAmount"] else None,
                     "store": "gog"
                 })
     except Exception as e:

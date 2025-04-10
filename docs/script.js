@@ -182,6 +182,7 @@ function createGameCard(game, showEndDate = false) {
     priceInfo = `
       <div class="price-info">
         <span class="original-price">$${game.originalPrice.toFixed(2)}</span>
+        ${game.finalPrice ? `<span class="final-price">$${game.finalPrice.toFixed(2)}</span>` : ''}
         <span class="discount-price">-${game.discountPercentage}%</span>
       </div>
     `;
