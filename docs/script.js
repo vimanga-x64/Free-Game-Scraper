@@ -77,56 +77,96 @@ function displayGames(data) {
 
       // For temporary games, show by store. For permanent, show by genre
       const groupBy = section.key === "temporary" ? "store" : "genre";
+      let hasAnyGames = false;
       
       for (const [groupName, games] of Object.entries(platformData)) {
-        if (games && games.length > 0) {
-          const groupHeader = document.createElement("h4");
-          groupHeader.textContent = `${capitalizeFirstLetter(groupName)}`;
-          sectionDiv.appendChild(groupHeader);
-
-          const gameList = document.createElement("div");
-          gameList.className = "game-list";
-
-          games.forEach(game => {
-            const item = document.createElement("div");
-            item.className = "game-item";
+        // Skip empty groups
+        if (!games || games.length === 0) {
+          // Only show message for temporary stores
+          if (section.key === "temporary") {
+            const storeHeader = document.createElement("h4");
+            storeHeader.textContent = `${capitalizeFirstLetter(groupName)}`;
+            sectionDiv.appendChild(storeHeader);
             
-            // Handle thumbnails - force HTTPS and provide fallback
-            let thumbnailUrl = game.thumbnail || "https://via.placeholder.com/300x200?text=No+Image";
-            thumbnailUrl = thumbnailUrl.replace('http://', 'https://');
-            
-            // Format end date if available
-            let endDateDisplay = "";
-            if (game.end_date) {
-              try {
-                const endDate = new Date(game.end_date);
-                endDateDisplay = endDate.toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric'
-                });
-              } catch (e) {
-                console.error("Error formatting date:", e);
-              }
-            }
-            
-            item.innerHTML = `
-              <div class="game-thumbnail-container">
-                <img src="${thumbnailUrl}" alt="${game.title}" class="game-thumbnail"
-                     onerror="this.onerror=null;this.src='https://via.placeholder.com/300x200?text=Image+Not+Available'">
-                <span class="store-badge ${game.store?.toLowerCase() || 'unknown'}">
-                  ${getStoreIcon(game.store)}
-                </span>
-              </div>
-              <div class="game-info">
-                <a href="${game.link}" target="_blank" class="game-title">${game.title}</a>
-                ${endDateDisplay ? `<div class="end-date">Free until ${endDateDisplay}</div>` : ''}
-              </div>
-            `;
-            gameList.appendChild(item);
-          });
-
-          sectionDiv.appendChild(gameList);
+            const emptyStoreMsg = document.createElement("p");
+            emptyStoreMsg.className = "empty-store-message";
+            emptyStoreMsg.textContent = `No free games available on ${capitalizeFirstLetter(groupName)} at this time.`;
+            sectionDiv.appendChild(emptyStoreMsg);
+          }
+          continue;
         }
+
+        hasAnyGames = true;
+        const groupHeader = document.createElement("h4");
+        groupHeader.textContent = `${capitalizeFirstLetter(groupName)}`;
+        groupHeader.className = "category-header";
+        sectionDiv.appendChild(groupHeader);
+
+        const gameList = document.createElement("div");
+        gameList.className = "game-list";
+
+        games.forEach(game => {
+          const item = document.createElement("div");
+          item.className = "game-item";
+          
+          // Handle thumbnails - use direct URLs for console games if available
+          let thumbnailUrl = game.thumbnail || "https://via.placeholder.com/300x200?text=No+Image";
+          
+          // Special handling for known console games
+          if (game.title === "Warframe") {
+            thumbnailUrl = "https://image.api.playstation.com/vulcan/img/rnd/202010/2217/TJvzqKJZRaLQ4wDq1WAXJX1w.png";
+          } else if (game.title === "War Thunder") {
+            thumbnailUrl = "https://warthunder.com/upload/image/!%202022%20NEWS/06.2022/Update%20Drone%20Age/wt_cover_DA_en.jpg";
+          }
+          
+          thumbnailUrl = thumbnailUrl.replace('http://', 'https://');
+          
+          // Format end date if available
+          let endDateDisplay = "";
+          if (game.end_date) {
+            try {
+              const endDate = new Date(game.end_date);
+              endDateDisplay = endDate.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric'
+              });
+            } catch (e) {
+              console.error("Error formatting date:", e);
+            }
+          }
+          
+          // Determine store or genre display
+          const infoText = section.key === "temporary" 
+            ? `<span class="game-store">${game.store || 'Unknown Store'}</span>`
+            : `<span class="game-genre">${game.genre || 'Various'}</span>`;
+          
+          item.innerHTML = `
+            <div class="game-thumbnail-container">
+              <img src="${thumbnailUrl}" alt="${game.title}" class="game-thumbnail"
+                   onerror="this.onerror=null;this.src='https://via.placeholder.com/300x200?text=Image+Not+Available'">
+              <span class="store-badge ${(game.store || 'unknown').toLowerCase()}">
+                ${getStoreIcon(game.store)}
+              </span>
+            </div>
+            <div class="game-info">
+              <a href="${game.link}" target="_blank" class="game-title">${game.title}</a>
+              <div class="game-meta">
+                ${infoText}
+                ${endDateDisplay ? `<span class="end-date">Free until ${endDateDisplay}</span>` : ''}
+              </div>
+            </div>
+          `;
+          gameList.appendChild(item);
+        });
+
+        sectionDiv.appendChild(gameList);
+      }
+
+      if (!hasAnyGames) {
+        const emptyMsg = document.createElement("p");
+        emptyMsg.className = "empty-message";
+        emptyMsg.textContent = `No ${section.key} ${platform} games found.`;
+        sectionDiv.appendChild(emptyMsg);
       }
     });
 
@@ -146,9 +186,11 @@ function getStoreIcon(store) {
     'gog': 'GOG',
     'playstation': 'PS',
     'xbox': 'XBOX',
-    'nintendo': 'SWITCH'
+    'nintendo': 'SWITCH',
+    'freetogame': 'FREE',
+    'unknown': 'STORE'
   };
-  return icons[store?.toLowerCase()] || store?.toUpperCase() || 'STORE';
+  return icons[(store || '').toLowerCase()] || store?.toUpperCase() || 'STORE';
 }
 
 // Initialize when page loads
