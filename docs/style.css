@@ -146,3 +146,71 @@
   padding: 20px;
   text-align: center;
 }
+
+/* Genre Containers and Carousels */
+.genre-container {
+  margin-bottom: 30px;
+}
+
+.genre-section {
+  margin-bottom: 20px;
+}
+
+.genre-section h5 {
+  font-size: 18px;
+  margin: 10px 0;
+  color: #2c3e50;
+}
+
+.carousel {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.carousel-content {
+  display: flex;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  gap: 15px;
+  padding: 10px 0;
+  scrollbar-width: none; /* Hide scrollbar for Firefox */
+  -ms-overflow-style: none; /* Hide scrollbar for IE/Edge */
+}
+
+.carousel-content::-webkit-scrollbar {
+  display: none; /* Hide scrollbar for Chrome/Safari */
+}
+
+.carousel-btn {
+  background: rgba(255, 255, 255, 0.8);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 1;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.carousel-btn:hover {
+  background: #3498db;
+  color: white;
+}
+
+.carousel-btn.prev {
+  margin-right: 10px;
+}
+
+.carousel-btn.next {
+  margin-left: 10px;
+}
+
+/* Adjust game cards for carousel */
+.carousel .game-item {
+  min-width: 200px;
+  flex: 0 0 auto;
+}

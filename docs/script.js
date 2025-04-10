@@ -76,17 +76,96 @@ function showGameType(type, data) {
 function renderPlatformGames(platform, data, container) {
   if (!container) return;
   
-  // Permanent free games - properly separated by store
-  const permSection = createCollapsibleSection("Permanently Free Games");
+  // Free-To-Play games (renamed from "Permanently Free Games")
+  const permSection = createCollapsibleSection("Free-To-Play Games");
   const permGames = data.permanent?.[platform] || {};
-  renderStoreGames(permSection, permGames, platform, 'permanent');
+  renderGenreCarousels(permSection, permGames, platform, 'free-to-play');
   container.appendChild(permSection);
   
-  // Temporary free games - properly separated by store
+  // Limited-Time Free games
   const tempSection = createCollapsibleSection("Limited-Time Free Games");
   const tempGames = data.temporary?.[platform] || {};
-  renderStoreGames(tempSection, tempGames, platform, 'temporary');
+  renderGenreCarousels(tempSection, tempGames, platform, 'temporary');
   container.appendChild(tempSection);
+}
+
+function renderGenreCarousels(sectionElement, storeGames, platform, sectionType) {
+  const content = sectionElement?.querySelector('.section-content');
+  if (!content) return;
+  
+  if (Object.keys(storeGames).length === 0) {
+    content.innerHTML = `<p class="empty-msg">No ${sectionType} ${platform} games available</p>`;
+    return;
+  }
+  
+  for (const store in storeGames) {
+    if (storeGames[store].length === 0) continue;
+    
+    const storeHeader = document.createElement("h4");
+    storeHeader.textContent = store.toUpperCase();
+    content.appendChild(storeHeader);
+    
+    // Create a container for all genre carousels for this store
+    const genreContainer = document.createElement("div");
+    genreContainer.className = "genre-container";
+    content.appendChild(genreContainer);
+    
+    for (const genre in storeGames[store]) {
+      const games = storeGames[store][genre];
+      if (games.length === 0) continue;
+      
+      // Create genre section
+      const genreSection = document.createElement("div");
+      genreSection.className = "genre-section";
+      
+      const genreTitle = document.createElement("h5");
+      genreTitle.textContent = genre.charAt(0).toUpperCase() + genre.slice(1);
+      genreSection.appendChild(genreTitle);
+      
+      // Create carousel
+      const carousel = document.createElement("div");
+      carousel.className = "carousel";
+      
+      const carouselContent = document.createElement("div");
+      carouselContent.className = "carousel-content";
+      
+      games.forEach(game => {
+        const gameWithStore = {
+          ...game,
+          store: game.store || store
+        };
+        carouselContent.appendChild(createGameCard(gameWithStore, sectionType === 'temporary'));
+      });
+      
+      // Add navigation buttons
+      const prevBtn = document.createElement("button");
+      prevBtn.className = "carousel-btn prev";
+      prevBtn.innerHTML = "&lt;";
+      prevBtn.onclick = () => scrollCarousel(carousel, -1);
+      
+      const nextBtn = document.createElement("button");
+      nextBtn.className = "carousel-btn next";
+      nextBtn.innerHTML = "&gt;";
+      nextBtn.onclick = () => scrollCarousel(carousel, 1);
+      
+      carousel.appendChild(prevBtn);
+      carousel.appendChild(carouselContent);
+      carousel.appendChild(nextBtn);
+      
+      genreSection.appendChild(carousel);
+      genreContainer.appendChild(genreSection);
+    }
+  }
+}
+
+// Function to handle carousel scrolling
+function scrollCarousel(carousel, direction) {
+  const content = carousel.querySelector('.carousel-content');
+  const scrollAmount = 300; // Adjust this value as needed
+  content.scrollBy({
+    left: direction * scrollAmount,
+    behavior: 'smooth'
+  });
 }
 
 function renderAllDiscountedGames(data, container) {
