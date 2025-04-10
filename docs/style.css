@@ -60,3 +60,109 @@ h4 {
   font-size: 0.8em;
   margin-top: 5px;
 }
+
+/* Loading State */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+  color: #666;
+}
+
+.spinner {
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #3498db;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Error State */
+.error {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  background: #ffeeee;
+  border-radius: 8px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.error-icon {
+  font-size: 2.5em;
+}
+
+.error button {
+  margin-top: 15px;
+  padding: 8px 16px;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.error button:hover {
+  background: #c0392b;
+}
+
+/* Game Items */
+.game-item {
+  position: relative;
+}
+
+.store-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.store-badge.epic {
+  background: #2a2a2a;
+}
+
+.store-badge.steam {
+  background: #1b2838;
+}
+
+.store-badge.gog {
+  background: #c6003c;
+}
+
+.store-badge.playstation {
+  background: #003791;
+}
+
+.store-badge.xbox {
+  background: #107c10;
+}
+
+.store-badge.nintendo {
+  background: #e60012;
+}
+
+.end-date {
+  font-size: 0.8em;
+  color: #e67e22;
+  margin-top: 5px;
+  font-weight: bold;
+}
