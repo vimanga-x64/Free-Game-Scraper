@@ -1,6 +1,7 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
-from scraper import get_permanent_free_games, get_temporary_free_games
+from scraper import get_permanent_free_games, get_temporary_free_games, get_discounted_games
+
 import os
 
 app = Flask(__name__)
@@ -25,11 +26,12 @@ def index():
 def get_free_games():
     response = jsonify({
         "permanent": get_permanent_free_games(),
-        "temporary": get_temporary_free_games()
+        "temporary": get_temporary_free_games(),
+        "sale": get_discounted_games()  
     })
-    # Manually add CORS headers for extra assurance
     response.headers.add('Access-Control-Allow-Origin', 'https://vimanga-x64.github.io')
     return response
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
