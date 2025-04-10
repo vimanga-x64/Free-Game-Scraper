@@ -1,6 +1,5 @@
 const API_URL = "https://free-game-scraper.onrender.com/api";
 
-// Main game types
 const GAME_TYPES = {
   PC: 'pc',
   CONSOLE: 'console',
@@ -21,9 +20,7 @@ async function fetchGames() {
     displayGames(data);
   } catch (err) {
     console.error("Error:", err);
-    if (container) {
-      container.innerHTML = `<div class="error">Failed to load games. <button onclick="fetchGames()">Retry</button></div>`;
-    }
+    container.innerHTML = `<div class="error">Failed to load games. <button onclick="fetchGames()">Retry</button></div>`;
   }
 }
 
@@ -33,16 +30,13 @@ function displayGames(data) {
   
   container.innerHTML = '';
 
-  // Create tabs container
   const tabsDiv = document.createElement("div");
   tabsDiv.className = "tabs";
   
-  // Create content container
   const contentDiv = document.createElement("div");
   contentDiv.id = "games-content";
   container.appendChild(contentDiv);
 
-  // Create tab buttons
   [GAME_TYPES.PC, GAME_TYPES.CONSOLE, GAME_TYPES.SALE].forEach(type => {
     const tab = document.createElement("button");
     tab.textContent = type.toUpperCase();
@@ -53,7 +47,6 @@ function displayGames(data) {
   
   container.insertBefore(tabsDiv, contentDiv);
   
-  // Initial display
   showGameType(GAME_TYPES.PC, data);
 }
 
@@ -63,7 +56,6 @@ function showGameType(type, data) {
   
   contentDiv.innerHTML = '';
   
-  // Update active tab
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.toggle('active', btn.textContent === type.toUpperCase());
   });
@@ -76,7 +68,7 @@ function showGameType(type, data) {
       renderPlatformGames('console', data, contentDiv);
       break;
     case GAME_TYPES.SALE:
-      renderDiscountedGames(data, contentDiv);
+      renderAllDiscountedGames(data, contentDiv);
       break;
   }
 }
@@ -84,31 +76,32 @@ function showGameType(type, data) {
 function renderPlatformGames(platform, data, container) {
   if (!container) return;
   
-  // Permanent free games
+  // Permanent free games - properly separated by store
   const permSection = createCollapsibleSection("Permanently Free Games");
   const permGames = data.permanent?.[platform] || {};
-  renderStoreGames(permSection, permGames);
+  renderStoreGames(permSection, permGames, platform, 'permanent');
   container.appendChild(permSection);
   
-  // Temporary free games
+  // Temporary free games - properly separated by store
   const tempSection = createCollapsibleSection("Limited-Time Free Games");
   const tempGames = data.temporary?.[platform] || {};
-  renderStoreGames(tempSection, tempGames);
+  renderStoreGames(tempSection, tempGames, platform, 'temporary');
   container.appendChild(tempSection);
 }
 
-function renderDiscountedGames(data, container) {
+function renderAllDiscountedGames(data, container) {
   if (!container) return;
   
-  const minDiscount = 70;
   const discountedGames = {};
   
+  // Get all discounted games from all platforms and sections
   ['pc', 'console'].forEach(platform => {
     ['permanent', 'temporary'].forEach(section => {
       const platformData = data[section]?.[platform] || {};
       for (const store in platformData) {
         platformData[store].forEach(game => {
-          if (game.discountPercentage >= minDiscount && game.discountPercentage < 100) {
+          // Show all discounted games (not just heavily discounted)
+          if (game.discountPercentage > 0 && game.discountPercentage < 100) {
             if (!discountedGames[store]) discountedGames[store] = [];
             discountedGames[store].push(game);
           }
@@ -118,10 +111,11 @@ function renderDiscountedGames(data, container) {
   });
   
   if (Object.keys(discountedGames).length === 0) {
-    container.innerHTML = `<p class="empty-msg">No heavily discounted games found (${minDiscount}%+ off)</p>`;
+    container.innerHTML = `<p class="empty-msg">No discounted games found</p>`;
     return;
   }
   
+  // Show discounted games grouped by store
   for (const store in discountedGames) {
     const storeSection = createCollapsibleSection(`${store.toUpperCase()} Discounts`);
     const gameList = document.createElement("div");
@@ -136,13 +130,12 @@ function renderDiscountedGames(data, container) {
   }
 }
 
-// Rest of the helper functions remain the same...
-function renderStoreGames(section, storeGames) {
-  const content = section?.querySelector('.section-content');
+function renderStoreGames(sectionElement, storeGames, platform, sectionType) {
+  const content = sectionElement?.querySelector('.section-content');
   if (!content) return;
   
   if (Object.keys(storeGames).length === 0) {
-    content.innerHTML = `<p class="empty-msg">No games available</p>`;
+    content.innerHTML = `<p class="empty-msg">No ${sectionType} ${platform} games available</p>`;
     return;
   }
   
@@ -157,7 +150,12 @@ function renderStoreGames(section, storeGames) {
     gameList.className = "game-list";
     
     storeGames[store].forEach(game => {
-      gameList.appendChild(createGameCard(game));
+      // Ensure store tag is set properly
+      const gameWithStore = {
+        ...game,
+        store: game.store || store // Use game.store if exists, otherwise use the store key
+      };
+      gameList.appendChild(createGameCard(gameWithStore, sectionType === 'temporary'));
     });
     
     content.appendChild(gameList);
@@ -188,7 +186,7 @@ function createCollapsibleSection(title) {
   return section;
 }
 
-function createGameCard(game, showDiscount = false) {
+function createGameCard(game, showEndDate = false) {
   const item = document.createElement("div");
   item.className = "game-item";
   
@@ -196,7 +194,7 @@ function createGameCard(game, showDiscount = false) {
     'https://via.placeholder.com/300x200?text=No+Image';
   
   let priceInfo = '';
-  if (showDiscount && game.discountPercentage && game.originalPrice) {
+  if (game.discountPercentage > 0 && game.originalPrice) {
     priceInfo = `
       <div class="price-info">
         <span class="original-price">$${game.originalPrice.toFixed(2)}</span>
@@ -209,14 +207,14 @@ function createGameCard(game, showDiscount = false) {
     <div class="game-thumbnail">
       <img src="${thumbnailUrl}" alt="${game.title}" 
            onerror="this.src='https://via.placeholder.com/300x200?text=Image+Not+Available'">
-      ${game.discountPercentage >= 70 ? `<span class="discount-badge">-${game.discountPercentage}%</span>` : ''}
+      ${game.discountPercentage > 0 ? `<span class="discount-badge">-${game.discountPercentage}%</span>` : ''}
     </div>
     <div class="game-info">
       <a href="${game.link}" target="_blank" class="game-title">${game.title}</a>
       ${priceInfo}
       <div class="game-meta">
         <span class="game-store">${game.store || 'Unknown'}</span>
-        ${game.end_date ? `<span class="end-date">${formatDate(game.end_date)}</span>` : ''}
+        ${showEndDate && game.end_date ? `<span class="end-date">Until ${formatDate(game.end_date)}</span>` : ''}
       </div>
     </div>
   `;
