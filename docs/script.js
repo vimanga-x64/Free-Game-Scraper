@@ -91,44 +91,28 @@ function renderPlatformGames(platform, data, container) {
 
 function renderAllDiscountedGames(data, container) {
   if (!container) return;
-  
-  const discountedGames = {};
-  
-  // Get all discounted games from all platforms and sections
-  ['pc', 'console'].forEach(platform => {
-    ['permanent', 'temporary'].forEach(section => {
-      const platformData = data[section]?.[platform] || {};
-      for (const store in platformData) {
-        platformData[store].forEach(game => {
-          // Show all discounted games (not just heavily discounted)
-          if (game.discountPercentage > 0 && game.discountPercentage < 100) {
-            if (!discountedGames[store]) discountedGames[store] = [];
-            discountedGames[store].push(game);
-          }
-        });
-      }
-    });
-  });
-  
+
+  const discountedGames = data.sale || {};
+
   if (Object.keys(discountedGames).length === 0) {
     container.innerHTML = `<p class="empty-msg">No discounted games found</p>`;
     return;
   }
-  
-  // Show discounted games grouped by store
+
   for (const store in discountedGames) {
     const storeSection = createCollapsibleSection(`${store.toUpperCase()} Discounts`);
     const gameList = document.createElement("div");
     gameList.className = "game-list";
-    
+
     discountedGames[store].forEach(game => {
-      gameList.appendChild(createGameCard(game, true));
+      gameList.appendChild(createGameCard(game, false));
     });
-    
+
     storeSection.querySelector('.section-content').appendChild(gameList);
     container.appendChild(storeSection);
   }
 }
+
 
 function renderStoreGames(sectionElement, storeGames, platform, sectionType) {
   const content = sectionElement?.querySelector('.section-content');
