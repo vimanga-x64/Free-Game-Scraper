@@ -9,26 +9,40 @@ const GAME_TYPES = {
 
 async function fetchGames() {
   const container = document.getElementById("games-container");
+  if (!container) return;
+  
   container.innerHTML = `<div class="loading">Loading games...</div>`;
 
   try {
     const response = await fetch(`${API_URL}/free-games`);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    
     const data = await response.json();
     displayGames(data);
   } catch (err) {
     console.error("Error:", err);
-    container.innerHTML = `<div class="error">Failed to load games. <button onclick="fetchGames()">Retry</button></div>`;
+    if (container) {
+      container.innerHTML = `<div class="error">Failed to load games. <button onclick="fetchGames()">Retry</button></div>`;
+    }
   }
 }
 
 function displayGames(data) {
   const container = document.getElementById("games-container");
+  if (!container) return;
+  
   container.innerHTML = '';
 
-  // Create tab buttons
+  // Create tabs container
   const tabsDiv = document.createElement("div");
   tabsDiv.className = "tabs";
   
+  // Create content container
+  const contentDiv = document.createElement("div");
+  contentDiv.id = "games-content";
+  container.appendChild(contentDiv);
+
+  // Create tab buttons
   [GAME_TYPES.PC, GAME_TYPES.CONSOLE, GAME_TYPES.SALE].forEach(type => {
     const tab = document.createElement("button");
     tab.textContent = type.toUpperCase();
@@ -37,15 +51,16 @@ function displayGames(data) {
     tabsDiv.appendChild(tab);
   });
   
-  container.appendChild(tabsDiv);
+  container.insertBefore(tabsDiv, contentDiv);
   
   // Initial display
   showGameType(GAME_TYPES.PC, data);
 }
 
 function showGameType(type, data) {
-  const contentDiv = document.getElementById("games-content") || document.createElement("div");
-  contentDiv.id = "games-content";
+  const contentDiv = document.getElementById("games-content");
+  if (!contentDiv) return;
+  
   contentDiv.innerHTML = '';
   
   // Update active tab
@@ -55,38 +70,37 @@ function showGameType(type, data) {
 
   switch(type) {
     case GAME_TYPES.PC:
-      renderPlatformGames(data, 'pc');
+      renderPlatformGames('pc', data, contentDiv);
       break;
     case GAME_TYPES.CONSOLE:
-      renderPlatformGames(data, 'console');
+      renderPlatformGames('console', data, contentDiv);
       break;
     case GAME_TYPES.SALE:
-      renderDiscountedGames(data);
+      renderDiscountedGames(data, contentDiv);
       break;
   }
 }
 
-function renderPlatformGames(data, platform) {
-  const contentDiv = document.getElementById("games-content");
+function renderPlatformGames(platform, data, container) {
+  if (!container) return;
   
   // Permanent free games
   const permSection = createCollapsibleSection("Permanently Free Games");
   const permGames = data.permanent?.[platform] || {};
   renderStoreGames(permSection, permGames);
-  contentDiv.appendChild(permSection);
+  container.appendChild(permSection);
   
   // Temporary free games
   const tempSection = createCollapsibleSection("Limited-Time Free Games");
   const tempGames = data.temporary?.[platform] || {};
   renderStoreGames(tempSection, tempGames);
-  contentDiv.appendChild(tempSection);
+  container.appendChild(tempSection);
 }
 
-function renderDiscountedGames(data) {
-  const contentDiv = document.getElementById("games-content");
-  const minDiscount = 70; // Minimum discount percentage to show
+function renderDiscountedGames(data, container) {
+  if (!container) return;
   
-  // Find all discounted games across platforms
+  const minDiscount = 70;
   const discountedGames = {};
   
   ['pc', 'console'].forEach(platform => {
@@ -104,7 +118,7 @@ function renderDiscountedGames(data) {
   });
   
   if (Object.keys(discountedGames).length === 0) {
-    contentDiv.innerHTML = `<p class="empty-msg">No heavily discounted games found (${minDiscount}%+ off)</p>`;
+    container.innerHTML = `<p class="empty-msg">No heavily discounted games found (${minDiscount}%+ off)</p>`;
     return;
   }
   
@@ -118,12 +132,14 @@ function renderDiscountedGames(data) {
     });
     
     storeSection.querySelector('.section-content').appendChild(gameList);
-    contentDiv.appendChild(storeSection);
+    container.appendChild(storeSection);
   }
 }
 
+// Rest of the helper functions remain the same...
 function renderStoreGames(section, storeGames) {
-  const content = section.querySelector('.section-content');
+  const content = section?.querySelector('.section-content');
+  if (!content) return;
   
   if (Object.keys(storeGames).length === 0) {
     content.innerHTML = `<p class="empty-msg">No games available</p>`;
@@ -167,8 +183,6 @@ function createCollapsibleSection(title) {
   
   section.appendChild(header);
   section.appendChild(content);
-  
-  // Start expanded
   content.style.display = 'block';
   
   return section;
