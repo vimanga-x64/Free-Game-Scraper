@@ -245,81 +245,47 @@ def get_discounted_games():
         "gog": []
     }
 
-    # --- STEAM DISCOUNTS ---
+    # --- Steam API ---
     try:
-        steam_url = "https://store.steampowered.com/search/?specials=1"
-        headers = {"User-Agent": "Mozilla/5.0"}
-        response = requests.get(steam_url, headers=headers, timeout=15)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        game_rows = soup.select('#search_resultsRows a')
+        steam_url = "https://store.steampowered.com/api/featuredcategories?cc=US&l=en"
+        response = requests.get(steam_url, timeout=15)
+        data = response.json()
 
-        for game in game_rows:
-            title = game.select('.title')[0].text.strip()
-            link = game['href']
-            app_id = link.split('/')[4] if len(link.split('/')) > 4 else ''
-            thumbnail = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{app_id}/header.jpg"
-
-            discount_span = game.select('.search_discount span')
-            price_block = game.select('.search_price')
-            if discount_span and price_block:
-                discount_text = discount_span[0].text.strip()
-                discount_pct = int(discount_text.replace('-', '').replace('%', '').strip())
-
-                original_price = price_block[0].text.strip().split('$')[-1]
-                try:
-                    original_price = float(original_price)
-                except:
-                    original_price = None
-
-                if 0 < discount_pct < 100:
-                    discounted["steam"].append({
-                        "title": title,
-                        "link": link,
-                        "thumbnail": thumbnail,
-                        "discountPercentage": discount_pct,
-                        "originalPrice": original_price,
-                        "store": "steam"
-                    })
+        for game in data.get("specials", {}).get("items", []):
+            if 0 < game.get("discount_percent", 0) < 100:
+                discounted["steam"].append({
+                    "title": game["name"],
+                    "link": f"https://store.steampowered.com/app/{game['id']}",
+                    "thumbnail": game["header_image"],
+                    "discountPercentage": game["discount_percent"],
+                    "originalPrice": game.get("original_price", 0) / 100 if game.get("original_price") else None,
+                    "store": "steam"
+                })
     except Exception as e:
-        print("Steam discount error:", e)
+        print("Steam API error:", e)
 
-    # --- GOG DISCOUNTS ---
+    # --- GOG API ---
     try:
-        gog_url = "https://www.gog.com/en/games?discounted=true&sort=popularity"
+        gog_url = "https://www.gog.com/games/ajax/filtered?mediaType=game&sort=popularity&discounted=true"
         headers = {"User-Agent": "Mozilla/5.0"}
         response = requests.get(gog_url, headers=headers, timeout=15)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        game_cards = soup.select('.product-tile')
+        data = response.json()
 
-        for game in game_cards:
-            discount_tag = game.select('.product-tile__discount-tag')
-            if not discount_tag:
-                continue
-
-            discount_text = discount_tag[0].text.strip()
-            if '%' not in discount_text:
-                continue
-
-            discount_pct = int(discount_text.replace('-', '').replace('%', '').strip())
-            if discount_pct >= 100 or discount_pct <= 0:
-                continue
-
-            title = game.select('.product-tile__title')[0].text.strip()
-            link = "https://www.gog.com" + game['href']
-            thumbnail = game.select('.product-tile__image source')[0]['srcset'].split()[0]
-
-            discounted["gog"].append({
-                "title": title,
-                "link": link,
-                "thumbnail": thumbnail,
-                "discountPercentage": discount_pct,
-                "originalPrice": None,
-                "store": "gog"
-            })
+        for game in data.get("products", []):
+            if game.get("price", {}).get("discountPercentage", 0) < 100:
+                discounted["gog"].append({
+                    "title": game["title"],
+                    "link": "https://www.gog.com" + game["url"],
+                    "thumbnail": game["image"],
+                    "discountPercentage": game["price"]["discountPercentage"],
+                    "originalPrice": float(game["price"]["baseAmount"]) if game["price"]["baseAmount"] else None,
+                    "store": "gog"
+                })
     except Exception as e:
-        print("GOG discount error:", e)
+        print("GOG API error:", e)
 
     return discounted
+
 
 
 def categorize_games(games_list):
