@@ -259,7 +259,7 @@ def get_ps_plus_free_games():
 @rate_limit
 @retry(max_retries=3, delay=5)
 def get_xbox_gold_free_games():
-    url = "https://www.xbox.com/en-US/games/store/free-to-play"
+    url = "https://www.xbox.com/games/free-to-play"
     
     def scrape_xbox(url):
         headers = {"User-Agent": "Mozilla/5.0"}
