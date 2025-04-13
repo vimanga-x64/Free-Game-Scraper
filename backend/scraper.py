@@ -490,26 +490,18 @@ def get_permanent_free_games():
     """Get all permanently free games (not time-limited)"""
     try:
         return {
-            "pc": {
-                "epic_games": get_epic_permanent_free_games(),
-                "steam": get_steam_permanent_free_games()
-            },
-            "console": {
-                "playstation": get_ps_plus_free_games(),
-                "xbox": get_xbox_gold_free_games()
-            }
+            "epic_games": get_epic_permanent_free_games(),
+            "steam": get_steam_permanent_free_games(),
+            "playstation": get_ps_plus_free_games(),
+            "xbox": get_xbox_gold_free_games()
         }
     except Exception as e:
         print(f"Error in get_permanent_free_games: {e}")
         return {
-            "pc": {
-                "epic_games": [],
-                "steam": []
-            },
-            "console": {
-                "playstation": [],
-                "xbox": []
-            }
+            "epic_games": [],
+            "steam": [],
+            "playstation": [],
+            "xbox": []
         }
 
 def get_temporary_free_games():

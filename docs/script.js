@@ -76,16 +76,16 @@ function showGameType(type, data) {
 function renderPlatformGames(platform, data, container) {
   if (!container) return;
   
-  // Free-To-Play games (renamed from "Permanently Free Games")
+  // Free-To-Play games
   const permSection = createCollapsibleSection("Free-To-Play Games");
-  const permGames = data.permanent?.[platform] || {};
-  renderGenreCarousels(permSection, permGames, platform, 'free-to-play');
+  const permGames = data.permanent || {};
+  renderStoreGames(permSection, permGames, platform, 'free-to-play');
   container.appendChild(permSection);
   
   // Limited-Time Free games
   const tempSection = createCollapsibleSection("Limited-Time Free Games");
   const tempGames = data.temporary?.[platform] || {};
-  renderGenreCarousels(tempSection, tempGames, platform, 'temporary');
+  renderStoreGames(tempSection, tempGames, platform, 'temporary');
   container.appendChild(tempSection);
 }
 
@@ -280,13 +280,34 @@ function createGameCard(game, showEndDate = false) {
   const thumbnailUrl = game.thumbnail?.replace('http://', 'https://') || 
     'https://via.placeholder.com/300x200?text=No+Image';
   
+  // Price info for discounted games
+  let priceInfo = '';
+  if (game.discountPercentage) {
+    priceInfo = `
+      <div class="price-info">
+        <span class="original-price">${game.originalPrice || ''}</span>
+        <span class="final-price">${game.finalPrice || ''}</span>
+        <span class="discount-badge">-${game.discountPercentage}%</span>
+      </div>
+    `;
+  }
+  
+  // End date for temporary free games
+  let endDateInfo = '';
+  if (showEndDate && game.end_date) {
+    endDateInfo = `<div class="end-date">Free until ${formatDate(game.end_date)}</div>`;
+  }
+  
   item.innerHTML = `
     <div class="game-thumbnail">
       <img src="${thumbnailUrl}" alt="${game.title}" 
            onerror="this.src='https://via.placeholder.com/300x200?text=Image+Not+Available'">
+      ${game.discountPercentage ? '<span class="discount-badge">-' + game.discountPercentage + '%</span>' : ''}
     </div>
     <div class="game-info">
       <a href="${game.link}" target="_blank" class="game-title">${game.title}</a>
+      ${priceInfo}
+      ${endDateInfo}
       <div class="game-meta">
         <span class="game-store ${game.store.toLowerCase()}">${game.store.toUpperCase()}</span>
       </div>
