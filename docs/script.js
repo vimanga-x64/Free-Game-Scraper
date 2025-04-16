@@ -78,7 +78,14 @@ function renderPlatformGames(platform, data, container) {
   
   // Free-To-Play games
   const permSection = createCollapsibleSection("Free-To-Play Games");
-  const permGames = data.permanent || {};
+  const permGames = platform === 'pc' ? {
+    epic_games: data.epic_games || [],
+    steam: data.steam || []
+  } : {
+    playstation: data.playstation || [],
+    xbox: data.xbox || []
+  };
+  
   renderStoreGames(permSection, permGames, platform, 'free-to-play');
   container.appendChild(permSection);
   
@@ -88,7 +95,6 @@ function renderPlatformGames(platform, data, container) {
   renderStoreGames(tempSection, tempGames, platform, 'temporary');
   container.appendChild(tempSection);
 }
-
 function renderGenreCarousels(sectionElement, storeGames, platform, sectionType) {
   const content = sectionElement?.querySelector('.section-content');
   if (!content) return;
