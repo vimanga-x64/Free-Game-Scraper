@@ -34,14 +34,14 @@ def get_humble_free_games():
         headers = {"User-Agent": "Mozilla/5.0"}
         response = requests.get(url, headers=headers, timeout=15)
         data = response.json()
-        
+
         return [{
             "title": game["human_name"],
             "link": f"https://www.humblebundle.com/store/{game['human_url']}",
             "thumbnail": game["standard_carousel_image"],
             "store": "humble",
-            "platforms": ["windows"],  # Humble primarily gives Windows keys
-            "end_date": ""  # Humble doesn't provide end dates
+            "platforms": ["windows"],
+            "end_date": (datetime.utcnow() + timedelta(days=4)).isoformat()  # estimated
         } for game in data.get("results", [])]
     except Exception as e:
         print("Humble Bundle error:", e)
@@ -54,7 +54,7 @@ def get_itchio_free_games():
         headers = {"User-Agent": "Mozilla/5.0"}
         response = requests.get(url, headers=headers, timeout=15)
         soup = BeautifulSoup(response.text, 'html.parser')
-        
+
         games = []
         for game in soup.select('.game_cell'):
             games.append({
@@ -63,12 +63,12 @@ def get_itchio_free_games():
                 "thumbnail": game.select('img.game_thumb')[0]['src'],
                 "store": "itchio",
                 "platforms": get_itchio_platforms(game),
-                "end_date": ""  # itch.io free games are usually permanent
+                "end_date": (datetime.utcnow() + timedelta(days=7)).isoformat()  # estimated
             })
         return games
     except Exception as e:
         print("itch.io error:", e)
-        return [] 
+        return []
 
 def get_itchio_platforms(game_element):
     platforms = []
@@ -83,10 +83,9 @@ def get_origin_free_games():
         headers = {"User-Agent": "Mozilla/5.0"}
         response = requests.get(url, headers=headers, timeout=15)
         soup = BeautifulSoup(response.text, 'html.parser')
-        
+
         games = []
         for game in soup.select('.origin-store-game-tile'):
-            # Origin typically shows "On the House" free games
             if "On the House" in game.text:
                 games.append({
                     "title": game.select('.origin-store-game-tile-title')[0].text.strip(),
@@ -94,12 +93,12 @@ def get_origin_free_games():
                     "thumbnail": game.select('img.origin-store-game-tile-image')[0]['src'],
                     "store": "origin",
                     "platforms": ["windows"],
-                    "end_date": extract_origin_end_date(game)  # Implement this
+                    "end_date": (datetime.utcnow() + timedelta(days=5)).isoformat()  # estimated
                 })
         return games
     except Exception as e:
         print("Origin error:", e)
-        return [] 
+        return []
     
 def extract_origin_end_date(game_element):
     try:
@@ -172,19 +171,17 @@ def get_steam_free_games():
         }
         response = requests.get(url, headers=headers, timeout=15)
         soup = BeautifulSoup(response.text, 'html.parser')
-        
+
         free_games = []
         game_rows = soup.select('#search_resultsRows a')
-        
+
         for game in game_rows:
             title = game.select('.title')[0].text.strip()
             link = game['href']
             app_id = link.split('/')[4] if len(link.split('/')) > 4 else ''
-            
-            # Get thumbnail using Steam API
+
             thumbnail = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{app_id}/header.jpg"
-            
-            # Get original price to confirm it's a temporary promotion
+
             price_block = game.select('.search_price')
             if len(price_block) > 0:
                 original_price = price_block[0].text.strip()
@@ -193,10 +190,11 @@ def get_steam_free_games():
                         "title": title,
                         "link": link,
                         "thumbnail": thumbnail,
-                        "genre": "steam",
-                        "store": "steam"
+                        "store": "steam",
+                        "platforms": ["windows"],
+                        "end_date": (datetime.utcnow() + timedelta(days=3)).isoformat()  # estimated
                     })
-        
+
         return free_games
     except Exception as e:
         print("Steam scraper error:", e)
@@ -210,28 +208,29 @@ def get_gog_free_games():
         }
         response = requests.get(url, headers=headers, timeout=15)
         soup = BeautifulSoup(response.text, 'html.parser')
-        
+
         free_games = []
         game_cards = soup.select('.product-tile')
-        
+
         for game in game_cards:
-            # Only include temporarily free games (not permanently free)
             discount_tag = game.select('.product-tile__discount-tag')
             if not discount_tag or '100%' not in discount_tag[0].text:
                 continue
-                
+
             title = game.select('.product-tile__title')[0].text.strip()
             link = "https://www.gog.com" + game['href']
             thumbnail = game.select('.product-tile__image source')[0]['srcset'].split()[0]
-            
+
             free_games.append({
                 "title": title,
                 "link": link,
                 "thumbnail": thumbnail,
                 "genre": "gog",
-                "store": "gog"
+                "store": "gog",
+                "platforms": ["windows"],
+                "end_date": (datetime.utcnow() + timedelta(days=2)).isoformat()  # estimated
             })
-        
+
         return free_games
     except Exception as e:
         print("GOG scraper error:", e)
