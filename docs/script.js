@@ -100,7 +100,7 @@ function renderGenreCarousels(sectionElement, storeGames, platform, sectionType)
   }
   
   for (const store in storeGames) {
-    if (!storeGames[store] || Object.keys(storeGames[store]).length === 0) continue;
+    if (storeGames[store].length === 0) continue;
     
     const storeHeader = document.createElement("h4");
     storeHeader.textContent = store.toUpperCase();
@@ -111,30 +111,50 @@ function renderGenreCarousels(sectionElement, storeGames, platform, sectionType)
     genreContainer.className = "genre-container";
     content.appendChild(genreContainer);
     
-    // Check if storeGames[store] is an array (direct list of games) or an object (grouped by genre)
-    if (Array.isArray(storeGames[store])) {
-      // Handle case where games are directly in an array (no genre grouping)
-      const carousel = createCarousel(storeGames[store], store, sectionType);
-      genreContainer.appendChild(carousel);
-    } else {
-      // Handle case where games are grouped by genre
-      for (const genre in storeGames[store]) {
-        const games = storeGames[store][genre];
-        if (!games || games.length === 0) continue;
-        
-        // Create genre section
-        const genreSection = document.createElement("div");
-        genreSection.className = "genre-section";
-        
-        const genreTitle = document.createElement("h5");
-        genreTitle.textContent = genre.charAt(0).toUpperCase() + genre.slice(1);
-        genreSection.appendChild(genreTitle);
-        
-        // Create and append carousel
-        const carousel = createCarousel(games, store, sectionType);
-        genreSection.appendChild(carousel);
-        genreContainer.appendChild(genreSection);
-      }
+    for (const genre in storeGames[store]) {
+      const games = storeGames[store][genre];
+      if (games.length === 0) continue;
+      
+      // Create genre section
+      const genreSection = document.createElement("div");
+      genreSection.className = "genre-section";
+      
+      const genreTitle = document.createElement("h5");
+      genreTitle.textContent = genre.charAt(0).toUpperCase() + genre.slice(1);
+      genreSection.appendChild(genreTitle);
+      
+      // Create carousel
+      const carousel = document.createElement("div");
+      carousel.className = "carousel";
+      
+      const carouselContent = document.createElement("div");
+      carouselContent.className = "carousel-content";
+      
+      games.forEach(game => {
+        const gameWithStore = {
+          ...game,
+          store: game.store || store
+        };
+        carouselContent.appendChild(createGameCard(gameWithStore, sectionType === 'temporary'));
+      });
+      
+      // Add navigation buttons
+      const prevBtn = document.createElement("button");
+      prevBtn.className = "carousel-btn prev";
+      prevBtn.innerHTML = "&lt;";
+      prevBtn.onclick = () => scrollCarousel(carousel, -1);
+      
+      const nextBtn = document.createElement("button");
+      nextBtn.className = "carousel-btn next";
+      nextBtn.innerHTML = "&gt;";
+      nextBtn.onclick = () => scrollCarousel(carousel, 1);
+      
+      carousel.appendChild(prevBtn);
+      carousel.appendChild(carouselContent);
+      carousel.appendChild(nextBtn);
+      
+      genreSection.appendChild(carousel);
+      genreContainer.appendChild(genreSection);
     }
   }
 }
