@@ -22,29 +22,14 @@ CORS(app, resources={
 def index():
     return "Free Game Scraper API is running!"
 
-
 @app.route("/api/free-games")
 def get_free_games():
-    permanent = get_permanent_free_games()
-    temporary = get_temporary_free_games()
-    sale = get_discounted_games()
-    
-    # Structure the response to maintain the separation
     response = jsonify({
-        "permanent": {
-            "pc": {
-                "epic": permanent.get("epic_games", []),
-                "steam": permanent.get("steam", [])
-            },
-            "console": {
-                "playstation": permanent.get("playstation", []),
-                "xbox": permanent.get("xbox", [])
-            }
-        },
-        "temporary": temporary,
-        "sale": sale
+        "permanent": get_permanent_free_games(),
+        "temporary": get_temporary_free_games(),
+        "sale": get_discounted_games()  
     })
-    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Origin', 'https://vimanga-x64.github.io')
     return response
 
 

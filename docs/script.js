@@ -68,7 +68,7 @@ function showGameType(type, data) {
       renderPlatformGames('console', data, contentDiv);
       break;
     case GAME_TYPES.SALE:
-      renderAllDiscountedGames(data.sale, contentDiv);
+      renderAllDiscountedGames(data, contentDiv);
       break;
   }
 }
@@ -76,19 +76,18 @@ function showGameType(type, data) {
 function renderPlatformGames(platform, data, container) {
   if (!container) return;
   
-  // 1. Permanently Free-To-Play Games (top section)
+  // Free-To-Play games (renamed from "Permanently Free Games")
   const permSection = createCollapsibleSection("Free-To-Play Games");
   const permGames = data.permanent?.[platform] || {};
-  renderStoreGames(permSection, permGames, platform, 'permanent');
+  renderGenreCarousels(permSection, permGames, platform, 'free-to-play');
   container.appendChild(permSection);
   
-  // 2. Limited-Time Free Games (bottom section)
+  // Limited-Time Free games
   const tempSection = createCollapsibleSection("Limited-Time Free Games");
   const tempGames = data.temporary?.[platform] || {};
-  renderStoreGames(tempSection, tempGames, platform, 'temporary');
+  renderGenreCarousels(tempSection, tempGames, platform, 'temporary');
   container.appendChild(tempSection);
 }
-
 
 function renderGenreCarousels(sectionElement, storeGames, platform, sectionType) {
   const content = sectionElement?.querySelector('.section-content');
@@ -100,7 +99,7 @@ function renderGenreCarousels(sectionElement, storeGames, platform, sectionType)
   }
   
   for (const store in storeGames) {
-    if (storeGames[store].length === 0) continue;
+    if (!storeGames[store] || Object.keys(storeGames[store]).length === 0) continue;
     
     const storeHeader = document.createElement("h4");
     storeHeader.textContent = store.toUpperCase();
@@ -111,50 +110,30 @@ function renderGenreCarousels(sectionElement, storeGames, platform, sectionType)
     genreContainer.className = "genre-container";
     content.appendChild(genreContainer);
     
-    for (const genre in storeGames[store]) {
-      const games = storeGames[store][genre];
-      if (games.length === 0) continue;
-      
-      // Create genre section
-      const genreSection = document.createElement("div");
-      genreSection.className = "genre-section";
-      
-      const genreTitle = document.createElement("h5");
-      genreTitle.textContent = genre.charAt(0).toUpperCase() + genre.slice(1);
-      genreSection.appendChild(genreTitle);
-      
-      // Create carousel
-      const carousel = document.createElement("div");
-      carousel.className = "carousel";
-      
-      const carouselContent = document.createElement("div");
-      carouselContent.className = "carousel-content";
-      
-      games.forEach(game => {
-        const gameWithStore = {
-          ...game,
-          store: game.store || store
-        };
-        carouselContent.appendChild(createGameCard(gameWithStore, sectionType === 'temporary'));
-      });
-      
-      // Add navigation buttons
-      const prevBtn = document.createElement("button");
-      prevBtn.className = "carousel-btn prev";
-      prevBtn.innerHTML = "&lt;";
-      prevBtn.onclick = () => scrollCarousel(carousel, -1);
-      
-      const nextBtn = document.createElement("button");
-      nextBtn.className = "carousel-btn next";
-      nextBtn.innerHTML = "&gt;";
-      nextBtn.onclick = () => scrollCarousel(carousel, 1);
-      
-      carousel.appendChild(prevBtn);
-      carousel.appendChild(carouselContent);
-      carousel.appendChild(nextBtn);
-      
-      genreSection.appendChild(carousel);
-      genreContainer.appendChild(genreSection);
+    // Check if storeGames[store] is an array (direct list of games) or an object (grouped by genre)
+    if (Array.isArray(storeGames[store])) {
+      // Handle case where games are directly in an array (no genre grouping)
+      const carousel = createCarousel(storeGames[store], store, sectionType);
+      genreContainer.appendChild(carousel);
+    } else {
+      // Handle case where games are grouped by genre
+      for (const genre in storeGames[store]) {
+        const games = storeGames[store][genre];
+        if (!games || games.length === 0) continue;
+        
+        // Create genre section
+        const genreSection = document.createElement("div");
+        genreSection.className = "genre-section";
+        
+        const genreTitle = document.createElement("h5");
+        genreTitle.textContent = genre.charAt(0).toUpperCase() + genre.slice(1);
+        genreSection.appendChild(genreTitle);
+        
+        // Create and append carousel
+        const carousel = createCarousel(games, store, sectionType);
+        genreSection.appendChild(carousel);
+        genreContainer.appendChild(genreSection);
+      }
     }
   }
 }
@@ -258,7 +237,12 @@ function renderStoreGames(sectionElement, storeGames, platform, sectionType) {
     gameList.className = "game-list";
     
     storeGames[store].forEach(game => {
-      gameList.appendChild(createGameCard(game, sectionType === 'temporary'));
+      // Ensure store tag is set properly
+      const gameWithStore = {
+        ...game,
+        store: game.store || store // Use game.store if exists, otherwise use the store key
+      };
+      gameList.appendChild(createGameCard(gameWithStore, sectionType === 'temporary'));
     });
     
     content.appendChild(gameList);
@@ -296,34 +280,13 @@ function createGameCard(game, showEndDate = false) {
   const thumbnailUrl = game.thumbnail?.replace('http://', 'https://') || 
     'https://via.placeholder.com/300x200?text=No+Image';
   
-  // Price info for discounted games
-  let priceInfo = '';
-  if (game.discountPercentage) {
-    priceInfo = `
-      <div class="price-info">
-        <span class="original-price">${game.originalPrice || ''}</span>
-        <span class="final-price">${game.finalPrice || ''}</span>
-        <span class="discount-badge">-${game.discountPercentage}%</span>
-      </div>
-    `;
-  }
-  
-  // End date for temporary free games
-  let endDateInfo = '';
-  if (showEndDate && game.end_date) {
-    endDateInfo = `<div class="end-date">Free until ${formatDate(game.end_date)}</div>`;
-  }
-  
   item.innerHTML = `
     <div class="game-thumbnail">
       <img src="${thumbnailUrl}" alt="${game.title}" 
            onerror="this.src='https://via.placeholder.com/300x200?text=Image+Not+Available'">
-      ${game.discountPercentage ? '<span class="discount-badge">-' + game.discountPercentage + '%</span>' : ''}
     </div>
     <div class="game-info">
       <a href="${game.link}" target="_blank" class="game-title">${game.title}</a>
-      ${priceInfo}
-      ${endDateInfo}
       <div class="game-meta">
         <span class="game-store ${game.store.toLowerCase()}">${game.store.toUpperCase()}</span>
       </div>
