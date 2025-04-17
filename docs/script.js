@@ -177,14 +177,14 @@ function createCarousel(games, store, sectionType) {
     carouselContent.appendChild(createGameCard(gameWithStore, sectionType === 'temporary'));
   });
   
-  // Add navigation buttons
+  // Add navigation buttons (initially hidden)
   const prevBtn = document.createElement("button");
-  prevBtn.className = "carousel-btn prev";
+  prevBtn.className = "carousel-btn prev hidden";
   prevBtn.innerHTML = "&lt;";
   prevBtn.onclick = () => scrollCarousel(carousel, -1);
   
   const nextBtn = document.createElement("button");
-  nextBtn.className = "carousel-btn next";
+  nextBtn.className = "carousel-btn next hidden";
   nextBtn.innerHTML = "&gt;";
   nextBtn.onclick = () => scrollCarousel(carousel, 1);
   
@@ -192,17 +192,62 @@ function createCarousel(games, store, sectionType) {
   carousel.appendChild(carouselContent);
   carousel.appendChild(nextBtn);
   
+  // Check overflow after rendering
+  setTimeout(() => {
+    checkCarouselOverflow(carousel);
+  }, 100);
+  
+  // Add resize observer
+  const resizeObserver = new ResizeObserver(() => {
+    checkCarouselOverflow(carousel);
+  });
+  resizeObserver.observe(carouselContent);
+  
   return carousel;
 }
 
-// Function to handle carousel scrolling
+function checkCarouselOverflow(carousel) {
+  const content = carousel.querySelector('.carousel-content');
+  const prevBtn = carousel.querySelector('.prev');
+  const nextBtn = carousel.querySelector('.next');
+  
+  // Show buttons only if content overflows
+  const hasOverflow = content.scrollWidth > content.clientWidth;
+  
+  prevBtn.classList.toggle('hidden', !hasOverflow);
+  nextBtn.classList.toggle('hidden', !hasOverflow);
+  
+  // Update button states based on scroll position
+  updateButtonStates(carousel);
+}
+
+function updateButtonStates(carousel) {
+  const content = carousel.querySelector('.carousel-content');
+  const prevBtn = carousel.querySelector('.prev');
+  const nextBtn = carousel.querySelector('.next');
+  
+  // Disable prev button if at start
+  prevBtn.classList.toggle('disabled', content.scrollLeft <= 0);
+  
+  // Disable next button if at end
+  nextBtn.classList.toggle('disabled', 
+    content.scrollLeft + content.clientWidth >= content.scrollWidth
+  );
+}
+
 function scrollCarousel(carousel, direction) {
   const content = carousel.querySelector('.carousel-content');
-  const scrollAmount = 300; // Adjust this value as needed
+  const scrollAmount = content.clientWidth * 0.8; // Scroll 80% of visible width
+  
   content.scrollBy({
     left: direction * scrollAmount,
     behavior: 'smooth'
   });
+  
+  // Update button states after scroll completes
+  setTimeout(() => {
+    updateButtonStates(carousel);
+  }, 300);
 }
 
 function renderAllDiscountedGames(data, container) {
