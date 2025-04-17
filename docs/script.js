@@ -96,7 +96,7 @@ function displayGames(data) {
     let tabName = '';
     switch(type) {
       case GAME_TYPES.PC: tabName = 'PC Games'; break;
-      case GAME_TYPES.TEMP: tabName = 'Temporary Free'; break;
+      case GAME_TYPES.TEMP: tabName = 'Free for a Limited Time'; break;
       case GAME_TYPES.SALE: tabName = 'Discounts'; break;
     }
     tab.textContent = tabName;
@@ -122,7 +122,7 @@ function showGameType(type, data) {
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.toggle('active', 
       (btn.textContent === 'PC GAMES' && type === GAME_TYPES.PC) ||
-      (btn.textContent === 'TEMPORARY FREE' && type === GAME_TYPES.TEMP) ||
+      (btn.textContent === 'FREE FOR A LIMITED TIME' && type === GAME_TYPES.TEMP) ||
       (btn.textContent === 'DISCOUNTS' && type === GAME_TYPES.SALE)
     );
   });
@@ -148,12 +148,17 @@ function showGameType(type, data) {
 function renderAllTemporaryGames(data, container) {
   if (!container) return;
   
-  // Combine all temporary games from different stores
-  const tempGames = [
-    ...(data.temporary?.pc?.epic_games || []),
-    ...(data.temporary?.pc?.steam || []),
-    ...(data.temporary?.pc?.gog || [])
-  ];
+  // Combine all temporary games from all stores and platforms
+  const tempGames = [];
+  
+  // Add PC games
+  if (data.temporary?.pc) {
+    for (const store in data.temporary.pc) {
+      if (Array.isArray(data.temporary.pc[store])) {
+        tempGames.push(...data.temporary.pc[store]);
+      }
+    }
+  }
   
   if (tempGames.length === 0) {
     container.innerHTML = `<p class="empty-msg">No temporary free games available</p>`;
@@ -181,11 +186,10 @@ function renderAllTemporaryGames(data, container) {
     lastChanceSection.querySelector('.section-content').appendChild(carousel);
     container.prepend(lastChanceSection);
   }
-
     
   // Group by store
   const byStore = tempGames.reduce((acc, game) => {
-    const store = game.store || 'other';
+    const store = game.store?.toLowerCase() || 'other';
     if (!acc[store]) acc[store] = [];
     acc[store].push(game);
     return acc;
@@ -193,7 +197,8 @@ function renderAllTemporaryGames(data, container) {
   
   // Render each store's games
   for (const store in byStore) {
-    const storeSection = createCollapsibleSection(`${store.toUpperCase()} Free Games`);
+    const storeName = store.charAt(0).toUpperCase() + store.slice(1);
+    const storeSection = createCollapsibleSection(`${storeName} Free Games`);
     const carousel = createCarousel(byStore[store], store, true);
     storeSection.querySelector('.section-content').appendChild(carousel);
     container.appendChild(storeSection);
@@ -202,7 +207,6 @@ function renderAllTemporaryGames(data, container) {
   // Update countdowns every minute
   updateCountdowns();
   setInterval(updateCountdowns, 60000);
-  
 }
 
 function renderPermanentPCGames(data, container) {

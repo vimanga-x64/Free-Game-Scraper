@@ -24,13 +24,12 @@ def index():
 
 @app.route("/api/free-games")
 def get_free_games():
-    return jsonify({
+    response = jsonify({
         "permanent": {
             "pc": get_permanent_free_games().get("pc", {})
         },
-        "temporary": {
-            "pc": get_temporary_free_games().get("pc", {})
-        },
+        "temporary": get_temporary_free_games(),
+        
         "sale": get_discounted_games()
     })
     response.headers.add('Access-Control-Allow-Origin', 'https://vimanga-x64.github.io')
