@@ -68,7 +68,7 @@ function showGameType(type, data) {
       renderPlatformGames('console', data, contentDiv);
       break;
     case GAME_TYPES.SALE:
-      renderAllDiscountedGames(data, contentDiv);
+      renderAllDiscountedGames(data.sale, contentDiv);
       break;
   }
 }
@@ -78,23 +78,26 @@ function renderPlatformGames(platform, data, container) {
   
   // Free-To-Play games
   const permSection = createCollapsibleSection("Free-To-Play Games");
-  const permGames = platform === 'pc' ? {
-    epic_games: data.epic_games || [],
-    steam: data.steam || []
-  } : {
-    playstation: data.playstation || [],
-    xbox: data.xbox || []
-  };
+  const games = data[platform] || []; // Get all games for the platform
   
-  renderStoreGames(permSection, permGames, platform, 'free-to-play');
+  if (games.length === 0) {
+    permSection.querySelector('.section-content').innerHTML = 
+      `<p class="empty-msg">No free-to-play ${platform} games available</p>`;
+  } else {
+    const gameList = document.createElement("div");
+    gameList.className = "game-list";
+    
+    games.forEach(game => {
+      gameList.appendChild(createGameCard(game, false));
+    });
+    
+    permSection.querySelector('.section-content').appendChild(gameList);
+  }
+  
   container.appendChild(permSection);
-  
-  // Limited-Time Free games
-  const tempSection = createCollapsibleSection("Limited-Time Free Games");
-  const tempGames = data.temporary?.[platform] || {};
-  renderStoreGames(tempSection, tempGames, platform, 'temporary');
-  container.appendChild(tempSection);
 }
+
+
 function renderGenreCarousels(sectionElement, storeGames, platform, sectionType) {
   const content = sectionElement?.querySelector('.section-content');
   if (!content) return;

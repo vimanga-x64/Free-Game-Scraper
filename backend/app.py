@@ -24,12 +24,31 @@ def index():
 
 @app.route("/api/free-games")
 def get_free_games():
+    permanent = get_permanent_free_games()
+    temporary = get_temporary_free_games()
+    sale = get_discounted_games()
+    
+    # Combine all PC free-to-play games from different stores into one list
+    pc_free_to_play = []
+    pc_free_to_play.extend(permanent.get("epic_games", []))
+    pc_free_to_play.extend(permanent.get("steam", []))
+    pc_free_to_play.extend(temporary.get("pc", {}).get("epic_games", []))
+    pc_free_to_play.extend(temporary.get("pc", {}).get("steam", []))
+    pc_free_to_play.extend(temporary.get("pc", {}).get("gog", []))
+    
+    # Combine all console free-to-play games
+    console_free_to_play = []
+    console_free_to_play.extend(permanent.get("playstation", []))
+    console_free_to_play.extend(permanent.get("xbox", []))
+    console_free_to_play.extend(temporary.get("console", {}).get("playstation", []))
+    console_free_to_play.extend(temporary.get("console", {}).get("xbox", []))
+    
     response = jsonify({
-        "permanent": get_permanent_free_games(),
-        "temporary": get_temporary_free_games(),
-        "sale": get_discounted_games()  
+        "pc": pc_free_to_play,
+        "console": console_free_to_play,
+        "sale": sale
     })
-    response.headers.add('Access-Control-Allow-Origin', 'https://vimanga-x64.github.io')
+    response.headers.add('Access-Control-Allow-Origin', '*')
     return response
 
 
