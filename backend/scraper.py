@@ -21,9 +21,94 @@ def get_temporary_free_games():
         "pc": {  # Only PC games
             "epic_games": get_epic_free_games(),
             "steam": get_steam_free_games(),
-            "gog": get_gog_free_games()
+            "gog": get_gog_free_games(),
+            "humble": get_humble_free_games(),
+            "itchio": get_itchio_free_games(),
+            "origin": get_origin_free_games()
         }
     }
+
+def get_humble_free_games():
+    try:
+        url = "https://www.humblebundle.com/store/api/search?sort=discount&filter=free"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(url, headers=headers, timeout=15)
+        data = response.json()
+        
+        return [{
+            "title": game["human_name"],
+            "link": f"https://www.humblebundle.com/store/{game['human_url']}",
+            "thumbnail": game["standard_carousel_image"],
+            "store": "humble",
+            "platforms": ["windows"],  # Humble primarily gives Windows keys
+            "end_date": ""  # Humble doesn't provide end dates
+        } for game in data.get("results", [])]
+    except Exception as e:
+        print("Humble Bundle error:", e)
+        return []
+    
+
+def get_itchio_free_games():
+    try:
+        url = "https://itch.io/games/free"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(url, headers=headers, timeout=15)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        games = []
+        for game in soup.select('.game_cell'):
+            games.append({
+                "title": game.select('.game_title')[0].text.strip(),
+                "link": game.select('a.title_link')[0]['href'],
+                "thumbnail": game.select('img.game_thumb')[0]['src'],
+                "store": "itchio",
+                "platforms": get_itchio_platforms(game),
+                "end_date": ""  # itch.io free games are usually permanent
+            })
+        return games
+    except Exception as e:
+        print("itch.io error:", e)
+        return [] 
+
+def get_itchio_platforms(game_element):
+    platforms = []
+    if game_element.select('.platform_win'): platforms.append("windows")
+    if game_element.select('.platform_mac'): platforms.append("mac")
+    if game_element.select('.platform_linux'): platforms.append("linux")
+    return platforms  
+
+def get_origin_free_games():
+    try:
+        url = "https://www.origin.com/usa/en-us/free-games"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(url, headers=headers, timeout=15)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        games = []
+        for game in soup.select('.origin-store-game-tile'):
+            # Origin typically shows "On the House" free games
+            if "On the House" in game.text:
+                games.append({
+                    "title": game.select('.origin-store-game-tile-title')[0].text.strip(),
+                    "link": "https://www.origin.com" + game.find('a')['href'],
+                    "thumbnail": game.select('img.origin-store-game-tile-image')[0]['src'],
+                    "store": "origin",
+                    "platforms": ["windows"],
+                    "end_date": extract_origin_end_date(game)  # Implement this
+                })
+        return games
+    except Exception as e:
+        print("Origin error:", e)
+        return [] 
+    
+def extract_origin_end_date(game_element):
+    try:
+        # Origin typically shows dates like "Free until Mar 15"
+        date_text = game_element.select('.origin-store-program-promo-end-date')[0].text
+        date_str = re.search(r'until (.*)', date_text).group(1)
+        return str(datetime.strptime(date_str, '%b %d').replace(year=datetime.now().year))
+    except:
+        return ""  # Return empty if date parsing fails
 
 def get_epic_free_games():
     try:
@@ -68,8 +153,8 @@ def get_epic_free_games():
                                 "title": game["title"],
                                 "link": f"https://store.epicgames.com/en-US/p/{slug}",
                                 "thumbnail": thumbnail,
-                                "genre": "epic",
-                                "store": "epic",
+                                "store": "Epic",
+                                "platforms": ["windows"], 
                                 "end_date": offer.get("endDate", "")
                             })
                             break

@@ -4,7 +4,17 @@ const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 const GAME_TYPES = {
   PC: 'pc',
+  TEMP: 'temp', 
   SALE: 'sale'
+};
+
+const STORE_ICONS = {
+  epic: '🎮',
+  steam: '♨️',
+  gog: '🛒',
+  humble: '🙏',  
+  itchio: '🎨',  
+  origin: '🟠'
 };
 
 async function fetchGames() {
@@ -27,12 +37,10 @@ async function fetchGames() {
 
   try {
     const response = await fetch(`${API_URL}/free-games`);
-    if (!response.ok) throw new Error(`Failed to load games (Status: ${response.status})`);
-    
+    if (!response.ok) throw new Error(`Server returned ${response.status}`);
     const data = await response.json();
     displayGames(data);
   } catch (err) {
-    console.error("Fetch Error:", err);
     container.innerHTML = `
       <div class="error-state">
         <div class="error-icon">⚠️</div>
@@ -43,7 +51,31 @@ async function fetchGames() {
     `;
   }
 
-    cachedData(data);
+    cacheData(data)
+}
+
+function updateCountdowns() {
+  document.querySelectorAll('.countdown').forEach(el => {
+    const endDate = new Date(el.dataset.endDate);
+    const now = new Date();
+    const diff = endDate - now;
+    
+    if (diff <= 0) {
+      el.textContent = "Expired!";
+      el.closest('.game-item').classList.add('expired');
+      return;
+    }
+    
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (hours < 24) {
+      el.textContent = `${hours}h ${minutes}m left`;
+      el.closest('.game-item').classList.add('ending-soon');
+    } else {
+      el.textContent = `${Math.floor(hours/24)} days left`;
+    }
+  });
 }
 
 function displayGames(data) {
@@ -60,12 +92,15 @@ function displayGames(data) {
   container.appendChild(contentDiv);
 
   // Only create PC and SALE tabs
-  [GAME_TYPES.PC, GAME_TYPES.SALE].forEach(type => {
+  [GAME_TYPES.PC, GAME_TYPES.TEMP, GAME_TYPES.SALE].forEach(type => {
     const tab = document.createElement("button");
-    tab.textContent = type === 'pc' ? 'PC GAMES' : 'DISCOUNTS';
-    tab.className = "tab-btn";
-    tab.onclick = () => showGameType(type, data);
-    tabsDiv.appendChild(tab);
+    let tabName = '';
+    switch(type) {
+      case GAME_TYPES.PC: tabName = 'PC Games'; break;
+      case GAME_TYPES.TEMP: tabName = 'Temporary Free'; break;
+      case GAME_TYPES.SALE: tabName = 'Discounts'; break;
+    }
+    tab.textContent = tabName;
   });
   
   container.insertBefore(tabsDiv, contentDiv);
@@ -82,15 +117,96 @@ function showGameType(type, data) {
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.toggle('active', 
       (btn.textContent === 'PC GAMES' && type === GAME_TYPES.PC) ||
+      (btn.textContent === 'TEMPORARY FREE' && type === GAME_TYPES.TEMP) ||
       (btn.textContent === 'DISCOUNTS' && type === GAME_TYPES.SALE)
     );
   });
 
-  if (type === GAME_TYPES.PC) {
-    renderPlatformGames('pc', data, contentDiv);
-  } else if (type === GAME_TYPES.SALE) {
-    renderAllDiscountedGames(data, contentDiv);
+  switch(type) {
+    case GAME_TYPES.PC:
+      renderPermanentPCGames(data, contentDiv);  // Only permanent PC games
+      break;
+      
+    case GAME_TYPES.TEMP:
+      renderAllTemporaryGames(data, contentDiv);  // New temporary games tab
+      break;
+      
+    case GAME_TYPES.SALE:
+      renderAllDiscountedGames(data, contentDiv); // Existing discounts
+      break;
+      
+    default:
+      console.error("Unknown game type:", type);
   }
+}
+
+function renderAllTemporaryGames(data, container) {
+  if (!container) return;
+  
+  // Combine all temporary games from different stores
+  const tempGames = [
+    ...(data.temporary?.pc?.epic_games || []),
+    ...(data.temporary?.pc?.steam || []),
+    ...(data.temporary?.pc?.gog || [])
+  ];
+  
+  if (tempGames.length === 0) {
+    container.innerHTML = `<p class="empty-msg">No temporary free games available</p>`;
+    return;
+  }
+  
+  // Sort by end date (soonest expiring first)
+  tempGames.sort((a, b) => {
+    const dateA = a.end_date ? new Date(a.end_date) : new Date(0);
+    const dateB = b.end_date ? new Date(b.end_date) : new Date(0);
+    return dateA - dateB;
+  });
+
+  const lastChanceGames = tempGames.filter(game => {
+    return game.end_date && 
+      (new Date(game.end_date) - new Date() < 24 * 60 * 60 * 1000);
+  });
+
+  if (lastChanceGames.length > 0) {
+    const lastChanceSection = createCollapsibleSection(
+      "⏰ LAST CHANCE (Expiring Soon!)",
+      'last-chance'
+    );
+    const carousel = createCarousel(lastChanceGames, 'last-chance', true);
+    lastChanceSection.querySelector('.section-content').appendChild(carousel);
+    container.prepend(lastChanceSection);
+  }
+
+    
+  // Group by store
+  const byStore = tempGames.reduce((acc, game) => {
+    const store = game.store || 'other';
+    if (!acc[store]) acc[store] = [];
+    acc[store].push(game);
+    return acc;
+  }, {});
+  
+  // Render each store's games
+  for (const store in byStore) {
+    const storeSection = createCollapsibleSection(`${store.toUpperCase()} Free Games`);
+    const carousel = createCarousel(byStore[store], store, true);
+    storeSection.querySelector('.section-content').appendChild(carousel);
+    container.appendChild(storeSection);
+  }
+
+  // Update countdowns every minute
+  updateCountdowns();
+  setInterval(updateCountdowns, 60000);
+  
+}
+
+function renderPermanentPCGames(data, container) {
+  if (!container) return;
+  
+  const permSection = createCollapsibleSection("Free-To-Play Games");
+  const permGames = data.permanent?.pc || {};
+  renderGenreCarousels(permSection, permGames, 'pc', 'free-to-play');
+  container.appendChild(permSection);
 }
 
 function renderPlatformGames(platform, data, container) {
@@ -346,47 +462,61 @@ function createCollapsibleSection(title) {
   return section;
 }
 
-function createGameCard(game, showEndDate = false) {
+function createGameCard(game) {
   const item = document.createElement("div");
   item.className = "game-item";
   
-  const thumbnailUrl = game.thumbnail?.replace('http://', 'https://') || 
-    'https://via.placeholder.com/300x200?text=No+Image';
+  const storeIcon = STORE_ICONS[game.store?.toLowerCase()] || '🛒';
+  const platforms = getPlatformIcons(game.platforms); // New platform icons
   
-  let priceInfo = '';
-  if (game.discountPercentage > 0 && game.originalPrice) {
-    priceInfo = `
-      <div class="price-info">
-        <span class="original-price">$${game.originalPrice.toFixed(2)}</span>
-        ${game.finalPrice ? `<span class="final-price">$${game.finalPrice.toFixed(2)}</span>` : ''}
-        <span class="discount-badge">-${game.discountPercentage}%</span>
-      </div>
-    `;
-  }
-
-  // Add platform/store badge
-  const storeBadge = game.store ? `
-    <div class="platform-badge ${game.store.toLowerCase()}">
-      ${game.store.toUpperCase()}
-    </div>
-  ` : '';
-
   item.innerHTML = `
     <div class="game-thumbnail">
-      <img src="${thumbnailUrl}" alt="${game.title}" loading="lazy"
-           onerror="this.src='https://via.placeholder.com/300x200?text=Image+Not+Available'">
-      ${storeBadge}
-      ${game.discountPercentage > 0 ? `<span class="discount-badge">-${game.discountPercentage}%</span>` : ''}
+      <img src="${game.thumbnail}" alt="${game.title}" loading="lazy">
+      <div class="game-badges">
+        <span class="store-badge">${storeIcon} ${game.store || 'Store'}</span>
+        ${platforms}
+        ${game.discountPercentage > 0 ? 
+          `<span class="discount-badge">-${game.discountPercentage}%</span>` : ''}
+      </div>
     </div>
     <div class="game-info">
-      <h3 class="game-title">${game.title}</h3>
-      ${priceInfo}
-      <a href="${game.link}" target="_blank" class="view-btn">View Deal</a>
-      ${showEndDate && game.end_date ? `<div class="end-date">⏳ Until ${formatDate(game.end_date)}</div>` : ''}
+      <h3>${game.title}</h3>
+      ${game.end_date ? `
+        <div class="countdown" data-end-date="${game.end_date}">
+          ⏳ ${formatDate(game.end_date)}
+        </div>
+      ` : ''}
+      <a href="${game.link}" target="_blank" class="view-btn">
+        Claim Now ${getStoreActionIcon(game.store)}
+      </a>
     </div>
   `;
   
   return item;
+}
+
+function getPlatformIcons(platforms) {
+  if (!platforms) return '';
+  const icons = {
+    windows: '🪟',
+    mac: '🍎',
+    linux: '🐧',
+    ps: '🎮',
+    xbox: '🟩'
+  };
+  return platforms.map(p => icons[p] || '').join(' ');
+}
+
+function getStoreActionIcon(store) {
+  const actions = {
+    epic: '⬇️',
+    steam: '🛒',
+    gog: '🎁',
+    humble: '🆓',  
+    itchio: '🎮',  
+    origin: '🟠' 
+  };
+  return actions[store?.toLowerCase()] || '👉';
 }
 
 function formatDate(dateString) {

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Free Game Scraper</title>
@@ -11,5 +12,14 @@
   <button onclick="fetchGames()">Refresh Games</button>
   <div id="games-container"></div>
   <script src="script.js"></script>
+  <script>
+    // Initialize with all features
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchGames();
+      
+      // Refresh data every 30 minutes
+      setInterval(fetchGames, 30 * 60 * 1000);
+    });
+    </script>
 </body>
 </html>
