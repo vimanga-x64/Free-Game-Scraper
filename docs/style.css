@@ -214,3 +214,100 @@
   min-width: 200px;
   flex: 0 0 auto;
 }
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top-color: #3498db;
+  animation: spin 1s ease-in-out infinite;
+  margin-bottom: 15px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error-state {
+  text-align: center;
+  padding: 30px;
+  background: #fff8f8;
+  border-radius: 8px;
+  max-width: 400px;
+  margin: 20px auto;
+}
+
+.error-icon {
+  font-size: 40px;
+  margin-bottom: 15px;
+}
+
+.retry-btn {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 15px;
+  transition: background 0.3s;
+}
+
+.retry-btn:hover {
+  background: #2980b9;
+}
+
+.platform-badge {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+}
+
+.platform-badge.epic {
+  background: #2a2a2a;
+}
+.platform-badge.steam {
+  background: #1b2838;
+}
+.platform-badge.playstation {
+  background: #003087;
+}
+.platform-badge.xbox {
+  background: #107c10;
+}
+.platform-badge.gog {
+  background: #c92126;
+}
+
+.view-btn {
+  display: block;
+  background: #3498db;
+  color: white;
+  text-align: center;
+  padding: 8px;
+  border-radius: 4px;
+  margin-top: 10px;
+  text-decoration: none;
+  font-size: 14px;
+  transition: background 0.3s;
+}
+
+.view-btn:hover {
+  background: #2980b9;
+}

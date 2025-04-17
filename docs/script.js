@@ -1,4 +1,6 @@
 const API_URL = "https://free-game-scraper.onrender.com/api";
+const CACHE_KEY = 'freeGamesCache';
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 const GAME_TYPES = {
   PC: 'pc',
@@ -9,19 +11,40 @@ const GAME_TYPES = {
 async function fetchGames() {
   const container = document.getElementById("games-container");
   if (!container) return;
+
+  const cachedData = getCachedData();
+  if (cachedData) {
+    displayGames(cachedData);
+    return;
+  }
   
-  container.innerHTML = `<div class="loading">Loading games...</div>`;
+  
+  container.innerHTML = `
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading free games...</p>
+    </div>
+  `;
 
   try {
     const response = await fetch(`${API_URL}/free-games`);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    if (!response.ok) throw new Error(`Failed to load games (Status: ${response.status})`);
     
     const data = await response.json();
     displayGames(data);
   } catch (err) {
-    console.error("Error:", err);
-    container.innerHTML = `<div class="error">Failed to load games. <button onclick="fetchGames()">Retry</button></div>`;
+    console.error("Fetch Error:", err);
+    container.innerHTML = `
+      <div class="error-state">
+        <div class="error-icon">⚠️</div>
+        <h3>Failed to load games</h3>
+        <p>${err.message}</p>
+        <button class="retry-btn" onclick="fetchGames()">Try Again</button>
+      </div>
+    `;
   }
+
+    cachedData(data);
 }
 
 function displayGames(data) {
@@ -206,6 +229,24 @@ function renderAllDiscountedGames(data, container) {
   }
 }
 
+function getCachedData() {
+  const cached = localStorage.getItem(CACHE_KEY);
+  if (!cached) return null;
+  
+  const { timestamp, data } = JSON.parse(cached);
+  if (Date.now() - timestamp < CACHE_DURATION) {
+    return data;
+  }
+  return null;
+}
+
+function cacheData(data) {
+  localStorage.setItem(CACHE_KEY, JSON.stringify({
+    timestamp: Date.now(),
+    data: data
+  }));
+}
+
 
 function renderStoreGames(sectionElement, storeGames, platform, sectionType) {
   const content = sectionElement?.querySelector('.section-content');
@@ -276,24 +317,30 @@ function createGameCard(game, showEndDate = false) {
       <div class="price-info">
         <span class="original-price">$${game.originalPrice.toFixed(2)}</span>
         ${game.finalPrice ? `<span class="final-price">$${game.finalPrice.toFixed(2)}</span>` : ''}
-        <span class="discount-price">-${game.discountPercentage}%</span>
+        <span class="discount-badge">-${game.discountPercentage}%</span>
       </div>
     `;
   }
-  
+
+  // Add platform/store badge
+  const storeBadge = game.store ? `
+    <div class="platform-badge ${game.store.toLowerCase()}">
+      ${game.store.toUpperCase()}
+    </div>
+  ` : '';
+
   item.innerHTML = `
     <div class="game-thumbnail">
-      <img src="${thumbnailUrl}" alt="${game.title}" 
+      <img src="${thumbnailUrl}" alt="${game.title}" loading="lazy"
            onerror="this.src='https://via.placeholder.com/300x200?text=Image+Not+Available'">
+      ${storeBadge}
       ${game.discountPercentage > 0 ? `<span class="discount-badge">-${game.discountPercentage}%</span>` : ''}
     </div>
     <div class="game-info">
-      <a href="${game.link}" target="_blank" class="game-title">${game.title}</a>
+      <h3 class="game-title">${game.title}</h3>
       ${priceInfo}
-      <div class="game-meta">
-        <span class="game-store">${game.store || 'Unknown'}</span>
-        ${showEndDate && game.end_date ? `<span class="end-date">Until ${formatDate(game.end_date)}</span>` : ''}
-      </div>
+      <a href="${game.link}" target="_blank" class="view-btn">View Deal</a>
+      ${showEndDate && game.end_date ? `<div class="end-date">⏳ Until ${formatDate(game.end_date)}</div>` : ''}
     </div>
   `;
   
