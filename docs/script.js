@@ -89,9 +89,8 @@ function displayGames(data) {
   
   const contentDiv = document.createElement("div");
   contentDiv.id = "games-content";
-  container.appendChild(contentDiv);
-
-  // Only create PC and SALE tabs
+  
+  // Create all tabs
   [GAME_TYPES.PC, GAME_TYPES.TEMP, GAME_TYPES.SALE].forEach(type => {
     const tab = document.createElement("button");
     let tabName = '';
@@ -101,10 +100,16 @@ function displayGames(data) {
       case GAME_TYPES.SALE: tabName = 'Discounts'; break;
     }
     tab.textContent = tabName;
+    tab.className = "tab-btn";
+    tab.onclick = () => showGameType(type, data);
+    tabsDiv.appendChild(tab);
   });
   
-  container.insertBefore(tabsDiv, contentDiv);
+  // Add elements to DOM in correct order
+  container.appendChild(tabsDiv);
+  container.appendChild(contentDiv);
   
+  // Show default tab
   showGameType(GAME_TYPES.PC, data);
 }
 
