@@ -4,7 +4,6 @@ const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 const GAME_TYPES = {
   PC: 'pc',
-  CONSOLE: 'console',
   SALE: 'sale'
 };
 
@@ -60,9 +59,10 @@ function displayGames(data) {
   contentDiv.id = "games-content";
   container.appendChild(contentDiv);
 
-  [GAME_TYPES.PC, GAME_TYPES.CONSOLE, GAME_TYPES.SALE].forEach(type => {
+  // Only create PC and SALE tabs
+  [GAME_TYPES.PC, GAME_TYPES.SALE].forEach(type => {
     const tab = document.createElement("button");
-    tab.textContent = type.toUpperCase();
+    tab.textContent = type === 'pc' ? 'PC GAMES' : 'DISCOUNTS';
     tab.className = "tab-btn";
     tab.onclick = () => showGameType(type, data);
     tabsDiv.appendChild(tab);
@@ -80,19 +80,16 @@ function showGameType(type, data) {
   contentDiv.innerHTML = '';
   
   document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.textContent === type.toUpperCase());
+    btn.classList.toggle('active', 
+      (btn.textContent === 'PC GAMES' && type === GAME_TYPES.PC) ||
+      (btn.textContent === 'DISCOUNTS' && type === GAME_TYPES.SALE)
+    );
   });
 
-  switch(type) {
-    case GAME_TYPES.PC:
-      renderPlatformGames('pc', data, contentDiv);
-      break;
-    case GAME_TYPES.CONSOLE:
-      renderPlatformGames('console', data, contentDiv);
-      break;
-    case GAME_TYPES.SALE:
-      renderAllDiscountedGames(data, contentDiv);
-      break;
+  if (type === GAME_TYPES.PC) {
+    renderPlatformGames('pc', data, contentDiv);
+  } else if (type === GAME_TYPES.SALE) {
+    renderAllDiscountedGames(data, contentDiv);
   }
 }
 

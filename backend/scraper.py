@@ -9,46 +9,19 @@ def get_permanent_free_games():
         pc_response = requests.get("https://www.freetogame.com/api/games", timeout=10)
         pc_data = pc_response.json()
         
-        # Console games (manually curated for now)
-        console_games = {
-            "action": [
-                {
-                    "title": "Warframe",
-                    "link": "https://www.playstation.com/games/warframe/",
-                    "thumbnail": "https://image.api.playstation.com/vulcan/img/rnd/202010/2217/TJvzqKJZRaLQ4wDq1WAXJX1w.png",
-                    "genre": "action",
-                    "store": "playstation"
-                }
-            ],
-            "mmo": [
-                {
-                    "title": "War Thunder",
-                    "link": "https://warthunder.com/",
-                    "thumbnail": "https://warthunder.com/upload/image/!%202022%20NEWS/06.2022/Update%20Drone%20Age/wt_cover_DA_en.jpg",
-                    "genre": "mmo",
-                    "store": "cross-platform"
-                }
-            ]
-        }
-        
         return {
-            "pc": categorize_games(pc_data),
-            "console": console_games
+            "pc": categorize_games(pc_data)  # Only return PC games
         }
     except Exception as e:
         print("Error fetching permanent games:", e)
-        return { "pc": {}, "console": {} }
+        return { "pc": {} }  # Only return PC games structure
 
 def get_temporary_free_games():
     return {
-        "pc": {
+        "pc": {  # Only PC games
             "epic_games": get_epic_free_games(),
             "steam": get_steam_free_games(),
             "gog": get_gog_free_games()
-        },
-        "console": {
-            "playstation": get_ps_plus_free_games(),
-            "xbox": get_xbox_gold_free_games()
         }
     }
 
