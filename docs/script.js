@@ -76,25 +76,17 @@ function showGameType(type, data) {
 function renderPlatformGames(platform, data, container) {
   if (!container) return;
   
-  // Free-To-Play games
+  // 1. Permanently Free-To-Play Games (top section)
   const permSection = createCollapsibleSection("Free-To-Play Games");
-  const games = data[platform] || []; // Get all games for the platform
-  
-  if (games.length === 0) {
-    permSection.querySelector('.section-content').innerHTML = 
-      `<p class="empty-msg">No free-to-play ${platform} games available</p>`;
-  } else {
-    const gameList = document.createElement("div");
-    gameList.className = "game-list";
-    
-    games.forEach(game => {
-      gameList.appendChild(createGameCard(game, false));
-    });
-    
-    permSection.querySelector('.section-content').appendChild(gameList);
-  }
-  
+  const permGames = data.permanent?.[platform] || {};
+  renderStoreGames(permSection, permGames, platform, 'permanent');
   container.appendChild(permSection);
+  
+  // 2. Limited-Time Free Games (bottom section)
+  const tempSection = createCollapsibleSection("Limited-Time Free Games");
+  const tempGames = data.temporary?.[platform] || {};
+  renderStoreGames(tempSection, tempGames, platform, 'temporary');
+  container.appendChild(tempSection);
 }
 
 
@@ -246,12 +238,7 @@ function renderStoreGames(sectionElement, storeGames, platform, sectionType) {
     gameList.className = "game-list";
     
     storeGames[store].forEach(game => {
-      // Ensure store tag is set properly
-      const gameWithStore = {
-        ...game,
-        store: game.store || store // Use game.store if exists, otherwise use the store key
-      };
-      gameList.appendChild(createGameCard(gameWithStore, sectionType === 'temporary'));
+      gameList.appendChild(createGameCard(game, sectionType === 'temporary'));
     });
     
     content.appendChild(gameList);
