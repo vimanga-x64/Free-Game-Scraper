@@ -16,7 +16,9 @@ const STORE_ICONS = {
   gog: '🛒',
   humble: '🙏',  
   itchio: '🎨',  
-  origin: '🟠'
+  origin: '🟠',
+  epic_games: '🎮', 
+  humblebundle: '🙏'
 };
 
 function showTab(tabType) {
@@ -171,7 +173,10 @@ function renderAllTemporaryGames(data, container) {
   if (data.temporary?.pc) {
     for (const store in data.temporary.pc) {
       if (Array.isArray(data.temporary.pc[store])) {
-        tempGames.push(...data.temporary.pc[store]);
+        tempGames.push(...data.temporary.pc[store].map(game => ({
+          ...game,
+          store: store // Ensure store is set properly
+        })));
       }
     }
   }
@@ -410,7 +415,10 @@ function renderAllDiscountedGames(data, container) {
     gameList.className = "game-list";
 
     discountedGames[store].forEach(game => {
-      gameList.appendChild(createGameCard(game, false));
+      gameList.appendChild(createGameCard({
+        ...game,
+        store: store // Ensure store is set properly
+      }, false));
     });
 
     storeSection.querySelector('.section-content').appendChild(gameList);
