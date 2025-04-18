@@ -27,14 +27,15 @@ def get_temporary_free_games():
         # Get Epic Games directly from your scraper
         epic_games = get_epic_free_games()
         
-        # Combine results
+        # Combine results with consistent store naming
         result = {
             "pc": {
                 "epic_games": epic_games,
-                "steam": cheap_shark_games.get('steam', []),
-                "gog": cheap_shark_games.get('gog', []),
-                "humble": cheap_shark_games.get('humble', []),
-                "itchio": get_itchio_free_games()  # Keep direct scraper as fallback
+                "steam": cheap_shark_games.get('steam', []) or get_steam_free_games(),
+                "gog": cheap_shark_games.get('gog', []) or get_gog_free_games(),
+                "humble": cheap_shark_games.get('humble', []) or get_humble_free_games(),
+                "itchio": get_itchio_free_games(),
+                "origin": get_origin_free_games()
             }
         }
         
@@ -43,7 +44,7 @@ def get_temporary_free_games():
             backup_data = load_backup_data()
             for store in result['pc']:
                 if not result['pc'][store]:
-                    result['pc'][store] = backup_data.get(store, [])
+                    result['pc'][store] = backup_data['pc'].get(store, [])
         
         return result
         

@@ -166,11 +166,11 @@ function showGameType(type, data) {
 function renderAllTemporaryGames(data, container) {
   if (!container) return;
 
-  console.log("Available stores in data:", Object.keys(data.temporary?.pc || {}));
+  console.log("Full temporary data:", data.temporary); // Debug log
   
   // Combine all temporary games from all stores and platforms
   const tempGames = [];
-  const seenGames = new Set(); // Track seen games to prevent duplicates
+  const seenGames = new Set();
   const requiredStores = ['epic_games', 'steam', 'gog', 'humble', 'itchio', 'origin'];
 
   if (data.temporary?.pc) {
@@ -187,25 +187,24 @@ function renderAllTemporaryGames(data, container) {
           if (!seenGames.has(gameId)) {
             seenGames.add(gameId);
             
-            tempGames.push({
-              ...game,
-              store: normalizeStoreName(game.store || storeKey)
-            });
-          } else {
-            console.log(`Duplicate detected: ${game.title} from ${storeKey}`);
+            // Normalize the game object structure
+            const normalizedGame = {
+              title: game.title,
+              link: game.link || game.game_url || '#',
+              thumbnail: game.thumbnail,
+              store: normalizeStoreName(game.store || storeKey),
+              platforms: game.platforms || ['windows'], // Default to windows if not specified
+              end_date: game.end_date || (datetime.utcnow() + timedelta(days=3)).isoformat()
+            };
+            
+            tempGames.push(normalizedGame);
           }
         });
-      } else {
-        console.warn(`No games array found for store: ${storeKey}`);
       }
     });
-  } else {
-    console.error("No temporary.pc data found in API response");
   }
-  
-  // Debug log combined games
-  console.log("Unique temporary games after processing:", tempGames);
-  
+
+  // Rest of the function remains the same...
   if (tempGames.length === 0) {
     container.innerHTML = `
       <div class="empty-msg">
@@ -215,7 +214,7 @@ function renderAllTemporaryGames(data, container) {
     `;
     return;
   }
-  
+
   // Sort by end date (soonest expiring first)
   tempGames.sort((a, b) => {
     const dateA = a.end_date ? new Date(a.end_date) : new Date(0);
@@ -270,9 +269,15 @@ function normalizeStoreName(store) {
     'humble': 'Humble',
     'humblebundle': 'Humble',
     'itchio': 'Itch.io',
-    'origin': 'Origin'
+    'origin': 'Origin',
+    '1': 'Steam',  // CheapShark store IDs
+    '7': 'GOG',
+    '11': 'Humble'
   };
-  return storeMap[store?.toLowerCase()] || store;
+  
+  // Handle both string and number store IDs
+  const storeKey = String(store).toLowerCase();
+  return storeMap[storeKey] || store;
 }
 
 function renderPermanentPCGames(data, container) {
