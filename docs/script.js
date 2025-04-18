@@ -1,6 +1,8 @@
 const API_URL = "https://free-game-scraper.onrender.com/api";
 const CACHE_KEY = 'freeGamesCache';
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+const SEARCH_DEBOUNCE_TIME = 300;
+const IMAGE_PLACEHOLDER = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHZpZXdCb3g9IjAgMCAxIDEiIHByZXNlcnZlQXNwZWN0UmF0aW89Im5vbmUiPjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlZWVlZWUiLz48L3N2Zz4=';
 
 const GAME_TYPES = {
   PC: 'pc',
@@ -17,6 +19,15 @@ const STORE_ICONS = {
   origin: '🟠'
 };
 
+function showTab(tabType) {
+  const data = JSON.parse(localStorage.getItem(CACHE_KEY))?.data;
+  if (!data) {
+    fetchGames();
+    return;
+  }
+  showGameType(tabType, data);
+}
+
 async function fetchGames() {
   const container = document.getElementById("games-container");
   if (!container) return;
@@ -24,8 +35,8 @@ async function fetchGames() {
   const cachedData = getCachedData();
   if (cachedData) {
     displayGames(cachedData);
-    return;
-  }
+      return;
+    }
   
   
   container.innerHTML = `
@@ -49,9 +60,14 @@ async function fetchGames() {
         <button class="retry-btn" onclick="fetchGames()">Try Again</button>
       </div>
     `;
+
+  
   }
 
     cacheData(data)
+    if (typeof lazysizes !== 'undefined') {
+      lazysizes.init();
+    }
 }
 
 function updateCountdowns() {
@@ -471,37 +487,125 @@ function createCollapsibleSection(title) {
   return section;
 }
 
-function createGameCard(game) {
+function createGameCard(game, isTemporary = false) {
   const item = document.createElement("div");
   item.className = "game-item";
+  item.tabIndex = 0; // Make focusable for keyboard navigation
+  item.dataset.platforms = (game.platforms || []).join(',');
+  item.dataset.store = game.store || '';
+  
+  // Add click handler for game details
+  item.addEventListener('click', () => showGameDetails(game));
+  item.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      showGameDetails(game);
+    }
+  });
   
   const storeIcon = STORE_ICONS[game.store?.toLowerCase()] || '🛒';
-  const platforms = getPlatformIcons(game.platforms); // New platform icons
+  const platforms = (game.platforms || []).map(p => `
+    <span class="platform-tag">
+      ${getPlatformIcon(p)} ${p.charAt(0).toUpperCase() + p.slice(1)}
+    </span>
+  `).join('');
   
   item.innerHTML = `
     <div class="game-thumbnail">
-      <img src="${game.thumbnail}" alt="${game.title}" loading="lazy">
+      <img class="lazyload" src="${IMAGE_PLACEHOLDER}" data-src="${game.thumbnail}" 
+           alt="${game.title} thumbnail" loading="lazy">
       <div class="game-badges">
-        <span class="store-badge">${storeIcon} ${game.store || 'Store'}</span>
-        ${platforms}
-        ${game.discountPercentage > 0 ? 
-          `<span class="discount-badge">-${game.discountPercentage}%</span>` : ''}
+        <span class="store-badge ${game.store?.toLowerCase()}">
+          ${storeIcon} ${game.store || 'Store'}
+        </span>
+        ${game.discountPercentage > 0 ? `
+          <span class="discount-badge">-${game.discountPercentage}%</span>
+        ` : ''}
       </div>
     </div>
     <div class="game-info">
-      <h3>${game.title}</h3>
+      <h3 class="game-title">${game.title}</h3>
+      
+      ${game.description ? `
+        <p class="game-description">${game.description}</p>
+      ` : ''}
+      
+      <div class="platform-tags">
+        ${platforms}
+      </div>
+      
       ${game.end_date ? `
         <div class="countdown" data-end-date="${game.end_date}">
-          ⏳ ${formatDate(game.end_date)}
+          <i class="fas fa-clock me-1" aria-hidden="true"></i> ${formatDate(game.end_date)}
         </div>
       ` : ''}
-      <a href="${game.link}" target="_blank" class="view-btn">
-        Claim Now ${getStoreActionIcon(game.store)}
-      </a>
+      
+      <button class="view-btn btn btn-primary w-100">
+        Claim Now <i class="fas fa-external-link-alt ms-1" aria-hidden="true"></i>
+      </button>
     </div>
   `;
   
   return item;
+}
+
+function showGameDetails(game) {
+  const modal = new bootstrap.Modal(document.getElementById('gameDetailsModal'));
+  const modalTitle = document.getElementById('gameModalTitle');
+  const modalBody = document.getElementById('gameModalBody');
+  const modalLink = document.getElementById('gameModalLink');
+  
+  modalTitle.textContent = game.title;
+  modalLink.href = game.link;
+  
+  // Build modal content
+  modalBody.innerHTML = `
+    <div class="row">
+      <div class="col-md-4">
+        <img src="${game.thumbnail}" alt="${game.title}" class="img-fluid mb-3">
+        <div class="d-grid gap-2">
+          <a href="${game.link}" class="btn btn-primary" target="_blank">
+            Claim on ${game.store || 'Store'}
+          </a>
+        </div>
+      </div>
+      <div class="col-md-8">
+        ${game.description ? `
+          <h4>Description</h4>
+          <p>${game.description}</p>
+        ` : ''}
+        
+        <div class="row mt-3">
+          <div class="col-6">
+            <h5>Details</h5>
+            <ul class="list-unstyled">
+              ${game.store ? `<li><strong>Store:</strong> ${game.store}</li>` : ''}
+              ${game.platforms?.length ? `
+                <li><strong>Platforms:</strong> ${game.platforms.join(', ')}</li>
+              ` : ''}
+              ${game.end_date ? `
+                <li><strong>Free until:</strong> ${formatDate(game.end_date)}</li>
+              ` : ''}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  modal.show();
+}
+
+
+function getPlatformIcon(platform) {
+  const icons = {
+    windows: '<i class="fab fa-windows"></i>',
+    mac: '<i class="fab fa-apple"></i>',
+    linux: '<i class="fab fa-linux"></i>',
+    ps: '<i class="fab fa-playstation"></i>',
+    xbox: '<i class="fab fa-xbox"></i>'
+  };
+  return icons[platform.toLowerCase()] || '<i class="fas fa-gamepad"></i>';
 }
 
 function getPlatformIcons(platforms) {
@@ -540,3 +644,116 @@ function formatDate(dateString) {
 }
 
 document.addEventListener("DOMContentLoaded", fetchGames);
+
+document.addEventListener("DOMContentLoaded", function() {
+  fetchGames();
+  initSearch();
+  initFilters();
+  initFeedback();
+  initKeyboardNavigation();
+  
+  // Refresh data every 30 minutes
+  setInterval(fetchGames, 30 * 60 * 1000);
+});
+
+// Initialize search functionality
+function initSearch() {
+  const searchInput = document.getElementById('gameSearch');
+  let searchTimeout;
+  
+  searchInput.addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      filterGames();
+    }, SEARCH_DEBOUNCE_TIME);
+  });
+}
+
+// Initialize filters
+function initFilters() {
+  document.getElementById('applyFilters').addEventListener('click', filterGames);
+}
+
+// Initialize feedback system
+function initFeedback() {
+  const stars = document.querySelectorAll('.rating-stars i');
+  stars.forEach(star => {
+    star.addEventListener('click', function() {
+      const rating = parseInt(this.dataset.rating);
+      document.getElementById('feedbackRating').value = rating;
+      
+      stars.forEach((s, i) => {
+        if (i < rating) {
+          s.classList.remove('far');
+          s.classList.add('fas');
+        } else {
+          s.classList.remove('fas');
+          s.classList.add('far');
+        }
+      });
+    });
+  });
+  
+  document.getElementById('feedbackForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const rating = document.getElementById('feedbackRating').value;
+    const comment = document.getElementById('feedbackComment').value;
+    
+    // Here you would typically send this to a backend
+    console.log('Feedback submitted:', { rating, comment });
+    
+    // Show thank you message
+    alert('Thank you for your feedback!');
+    const modal = bootstrap.Modal.getInstance(document.getElementById('feedbackModal'));
+    modal.hide();
+  });
+}
+
+// Initialize keyboard navigation
+function initKeyboardNavigation() {
+  document.addEventListener('keydown', function(e) {
+    // Skip if inside input/textarea
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+    
+    // 1-9 shortcuts for games
+    if (e.key >= '1' && e.key <= '9' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      const index = parseInt(e.key) - 1;
+      const games = document.querySelectorAll('.game-item');
+      if (index < games.length) {
+        games[index].focus();
+        games[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+    
+    // '/' to focus search
+    if (e.key === '/' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      e.preventDefault();
+      document.getElementById('gameSearch').focus();
+    }
+  });
+}
+
+// Filter games based on search and filters
+function filterGames() {
+  const searchTerm = document.getElementById('gameSearch').value.toLowerCase();
+  const platformFilter = document.getElementById('platformFilter').value;
+  const storeFilter = document.getElementById('storeFilter').value;
+  
+  const games = document.querySelectorAll('.game-item');
+  
+  games.forEach(game => {
+    const title = game.querySelector('.game-title').textContent.toLowerCase();
+    const platforms = game.dataset.platforms || '';
+    const store = game.dataset.store || '';
+    
+    const matchesSearch = title.includes(searchTerm);
+    const matchesPlatform = !platformFilter || platforms.includes(platformFilter);
+    const matchesStore = !storeFilter || store.toLowerCase().includes(storeFilter);
+    
+    if (matchesSearch && matchesPlatform && matchesStore) {
+      game.style.display = '';
+    } else {
+      game.style.display = 'none';
+    }
+  });
+}

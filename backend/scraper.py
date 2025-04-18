@@ -28,6 +28,22 @@ def get_temporary_free_games():
         }
     }
 
+
+def optimize_thumbnail_url(url):
+    """Optimize thumbnail URLs for faster loading"""
+    if not url:
+        return url
+    
+    # Example optimizations for common stores
+    if 'cdn.cloudflare.steamstatic.com' in url:
+        return url.replace('header.jpg', 'capsule_sm_120.jpg')
+    elif 'akamaihd.net' in url:  # Epic Games
+        return url.replace('offer_image_tall', 'offer_image_small')
+    elif 'gog.com' in url:
+        return url.replace('_product_tile_256', '_product_tile_120')
+    
+    return url
+
 def get_humble_free_games():
     try:
         url = "https://www.humblebundle.com/store/api/search?sort=discount&filter=free"
@@ -151,7 +167,8 @@ def get_epic_free_games():
                             free_games.append({
                                 "title": game["title"],
                                 "link": f"https://store.epicgames.com/en-US/p/{slug}",
-                                "thumbnail": thumbnail,
+                                "thumbnail": optimize_thumbnail_url(thumbnail),
+                                "description": game.get("description", ""),
                                 "store": "Epic",
                                 "platforms": ["windows"], 
                                 "end_date": offer.get("endDate", "")

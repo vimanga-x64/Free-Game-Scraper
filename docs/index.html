@@ -1,25 +1,178 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Free Game Scraper</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Discover and claim free games from Epic, Steam, GOG, Humble Bundle and more. Never miss a free game deal again!">
+  <meta name="keywords" content="free games, PC games, game deals, Epic free games, Steam free games">
+  <meta name="author" content="Your Name">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://yourdomain.com/">
+  <meta property="og:title" content="Free Game Finder | Claim Free PC Games">
+  <meta property="og:description" content="Discover and claim free games from all major platforms in one place">
+  <meta property="og:image" content="https://yourdomain.com/images/og-image.jpg">
+  
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://yourdomain.com/">
+  <meta property="twitter:title" content="Free Game Finder | Claim Free PC Games">
+  <meta property="twitter:description" content="Discover and claim free games from all major platforms in one place">
+  <meta property="twitter:image" content="https://yourdomain.com/images/og-image.jpg">
+
+  <title>Free Game Finder | Claim Free PC Games</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>🎮 Free Game Scraper</h1>
-  <button onclick="fetchGames()">Refresh Games</button>
-  <div id="games-container"></div>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand" href="#" aria-label="Free Game Finder Home">
+        <i class="fas fa-gamepad me-2" aria-hidden="true"></i>Free Game Finder
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+              aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link active" href="#" onclick="showTab('pc')" aria-current="page">PC Games</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showTab('temp')">Free for Limited Time</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showTab('sale')">Discounts</a>
+          </li>
+        </ul>
+        <div class="ms-auto d-flex">
+          <div class="search-container me-2">
+            <input type="text" id="gameSearch" class="form-control" placeholder="Search games..." 
+                   aria-label="Search games">
+          </div>
+          <button class="btn btn-outline-light" onclick="fetchGames()" aria-label="Refresh games">
+            <i class="fas fa-sync-alt me-1" aria-hidden="true"></i> Refresh
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main-content" class="container my-4">
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <div class="filter-section">
+          <h2 class="h5">Filter Games</h2>
+          <div class="d-flex flex-wrap gap-2">
+            <select id="platformFilter" class="form-select form-select-sm" aria-label="Filter by platform">
+              <option value="">All Platforms</option>
+              <option value="windows">Windows</option>
+              <option value="mac">Mac</option>
+              <option value="linux">Linux</option>
+            </select>
+            <select id="storeFilter" class="form-select form-select-sm" aria-label="Filter by store">
+              <option value="">All Stores</option>
+              <option value="epic">Epic Games</option>
+              <option value="steam">Steam</option>
+              <option value="gog">GOG</option>
+            </select>
+            <button id="applyFilters" class="btn btn-sm btn-primary">Apply</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="games-container"></div>
+    
+    <!-- Feedback Modal -->
+    <div class="modal fade" id="feedbackModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Share Your Feedback</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="feedbackForm">
+              <div class="mb-3">
+                <label for="feedbackRating" class="form-label">Rating</label>
+                <div class="rating-stars">
+                  <i class="far fa-star" data-rating="1"></i>
+                  <i class="far fa-star" data-rating="2"></i>
+                  <i class="far fa-star" data-rating="3"></i>
+                  <i class="far fa-star" data-rating="4"></i>
+                  <i class="far fa-star" data-rating="5"></i>
+                </div>
+                <input type="hidden" id="feedbackRating" name="rating">
+              </div>
+              <div class="mb-3">
+                <label for="feedbackComment" class="form-label">Comments</label>
+                <textarea class="form-control" id="feedbackComment" rows="3"></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Game Details Modal -->
+    <div class="modal fade" id="gameDetailsModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="gameModalTitle">Game Details</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="gameModalBody">
+            <!-- Content will be loaded dynamically -->
+          </div>
+          <div class="modal-footer">
+            <a href="#" class="btn btn-primary" id="gameModalLink" target="_blank">Claim Game</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bg-dark text-white py-3 mt-4">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6">
+          <h3 class="h5">Free Game Finder</h3>
+          <p>Never miss a free game deal again!</p>
+        </div>
+        <div class="col-md-3">
+          <h4 class="h6">Quick Links</h4>
+          <ul class="list-unstyled">
+            <li><a href="#" class="text-white" onclick="showTab('pc')">PC Games</a></li>
+            <li><a href="#" class="text-white" onclick="showTab('temp')">Limited Time Offers</a></li>
+          </ul>
+        </div>
+        <div class="col-md-3">
+          <h4 class="h6">Feedback</h4>
+          <button class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#feedbackModal">
+            Share Feedback
+          </button>
+        </div>
+      </div>
+      <hr>
+      <div class="text-center">
+        <p class="mb-0">© 2023 Free Game Finder | Not affiliated with any game stores</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lazysizes@5.3.2/lazysizes.min.js" async></script>
   <script src="script.js"></script>
-  <script>
-    // Initialize with all features
-    document.addEventListener("DOMContentLoaded", () => {
-      fetchGames();
-      
-      // Refresh data every 30 minutes
-      setInterval(fetchGames, 30 * 60 * 1000);
-    });
-    </script>
 </body>
 </html>
