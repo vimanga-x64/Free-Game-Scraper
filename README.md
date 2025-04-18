@@ -44,11 +44,14 @@ The application consists of:
    cd free-game-finder
 
 2. Set up a Python virtual environment
+   ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows use `venv\Scripts\activate`
 
-3. Install dependencies
+4. Install dependencies
+   ```bash
    pip install -r requirements.txt
 
-4. Run the Flask server
+6. Run the Flask server
+   ```bash
    python app.py
