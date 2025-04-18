@@ -349,14 +349,12 @@ function checkCarouselOverflow(carousel) {
   const prevBtn = carousel.querySelector('.prev');
   const nextBtn = carousel.querySelector('.next');
   
-  // Show buttons only if content overflows
-  const hasOverflow = content.scrollWidth > content.clientWidth;
+  // Always show buttons but disable when not scrollable
+  const canScrollLeft = content.scrollLeft > 0;
+  const canScrollRight = content.scrollLeft + content.clientWidth < content.scrollWidth;
   
-  prevBtn.classList.toggle('hidden', !hasOverflow);
-  nextBtn.classList.toggle('hidden', !hasOverflow);
-  
-  // Update button states based on scroll position
-  updateButtonStates(carousel);
+  prevBtn.classList.toggle('disabled', !canScrollLeft);
+  nextBtn.classList.toggle('disabled', !canScrollRight);
 }
 
 function updateButtonStates(carousel) {
@@ -375,14 +373,14 @@ function updateButtonStates(carousel) {
 
 function scrollCarousel(carousel, direction) {
   const content = carousel.querySelector('.carousel-content');
-  const scrollAmount = content.clientWidth * 0.8; // Scroll 80% of visible width
+  const scrollAmount = content.clientWidth * 0.8;
   
   content.scrollBy({
     left: direction * scrollAmount,
     behavior: 'smooth'
   });
   
-  // Update button states after scroll completes
+  // Update button states after scroll
   setTimeout(() => {
     updateButtonStates(carousel);
   }, 300);
