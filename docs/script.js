@@ -170,12 +170,12 @@ function renderAllTemporaryGames(data, container) {
   const tempGames = [];
   
   // Add PC games
-  if (data.temporary?.pc) {
+  if (data.temporary && data.temporary.pc) {
     for (const store in data.temporary.pc) {
       if (Array.isArray(data.temporary.pc[store])) {
         tempGames.push(...data.temporary.pc[store].map(game => ({
           ...game,
-          store: store // Ensure store is set properly
+          store: game.store || store // Ensure store is set properly
         })));
       }
     }
@@ -363,8 +363,8 @@ function checkCarouselOverflow(carousel) {
   const hasOverflow = content.scrollWidth > content.clientWidth;
   
   // Always show buttons but disable if no overflow
-  prevBtn.classList.toggle('disabled', !hasOverflow);
-  nextBtn.classList.toggle('disabled', !hasOverflow);
+  prevBtn.style.display = hasOverflow ? 'flex' : 'none';
+  nextBtn.style.display = hasOverflow ? 'flex' : 'none';
   
   // Update initial button states
   updateButtonStates(carousel);
@@ -415,10 +415,23 @@ function renderAllDiscountedGames(data, container) {
     gameList.className = "game-list";
 
     discountedGames[store].forEach(game => {
-      gameList.appendChild(createGameCard({
+      const gameCard = createGameCard({
         ...game,
         store: store // Ensure store is set properly
-      }, false));
+      }, false);
+
+      if (game.originalPrice || game.finalPrice) {
+        const priceInfo = document.createElement("div");
+        priceInfo.className = "price-info";
+        priceInfo.innerHTML = `
+          ${game.originalPrice ? `<span class="original-price">$${game.originalPrice}</span>` : ''}
+          ${game.finalPrice ? `<span class="final-price">$${game.finalPrice}</span>` : ''}
+        `;
+        gameCard.querySelector('.game-info').prepend(priceInfo);
+      }
+      
+      gameList.appendChild(gameCard);
+
     });
 
     storeSection.querySelector('.section-content').appendChild(gameList);
@@ -525,42 +538,31 @@ function createGameCard(game, isTemporary = false) {
   `).join('');
   
   item.innerHTML = `
-    <div class="game-thumbnail">
-      <img class="lazyload" src="${IMAGE_PLACEHOLDER}" data-src="${game.thumbnail}" 
-           alt="${game.title} thumbnail" loading="lazy">
-      <div class="game-badges">
-        <span class="store-badge ${game.store?.toLowerCase()}">
-          ${storeIcon} ${game.store || 'Store'}
-        </span>
-        ${game.discountPercentage > 0 ? `
-          <span class="discount-badge">-${game.discountPercentage}%</span>
-        ` : ''}
-      </div>
-    </div>
-    <div class="game-info">
-      <h3 class="game-title">${game.title}</h3>
-      
-      ${game.description ? `
-        <p class="game-description">${game.description}</p>
+  <div class="game-thumbnail">
+    <img class="lazyload" src="${IMAGE_PLACEHOLDER}" data-src="${game.thumbnail}" 
+         alt="${game.title} thumbnail" loading="lazy">
+    <div class="game-badges">
+      <span class="store-badge ${game.store?.toLowerCase()}">
+        ${storeIcon} ${game.store || 'Store'}
+      </span>
+      ${game.discountPercentage > 0 ? `
+        <span class="discount-badge">-${game.discountPercentage}%</span>
       ` : ''}
-      
-      <div class="platform-tags">
-        ${platforms}
-      </div>
-      
-      ${game.end_date ? `
-        <div class="countdown" data-end-date="${game.end_date}">
-          <i class="fas fa-clock me-1" aria-hidden="true"></i> ${formatDate(game.end_date)}
-        </div>
-      ` : ''}
-      
-      <button class="view-btn btn btn-primary w-100">
-        Claim Now <i class="fas fa-external-link-alt ms-1" aria-hidden="true"></i>
-      </button>
     </div>
-  `;
-  
-  return item;
+  </div>
+  <div class="game-info">
+    ${(game.originalPrice || game.finalPrice) ? `
+      <div class="price-info">
+        ${game.originalPrice ? `<span class="original-price">$${game.originalPrice.toFixed(2)}</span>` : ''}
+        ${game.finalPrice ? `<span class="final-price">$${game.finalPrice.toFixed(2)}</span>` : ''}
+      </div>
+    ` : ''}
+    <h3 class="game-title">${game.title}</h3>
+    <!-- rest of the existing HTML -->
+  </div>
+`;
+
+return item;
 }
 
 function showGameDetails(game) {
