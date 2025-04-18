@@ -101,16 +101,26 @@ body {
 .price-info {
   margin: 0.5rem 0;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .original-price {
   text-decoration: line-through;
   color: var(--secondary);
-  margin-right: 0.5rem;
+  opacity: 0.8;
 }
 
 .final-price {
   color: var(--danger);
+  font-weight: 700;
+}
+
+.no-price {
+  font-style: italic;
+  color: var(--secondary);
+  font-size: 0.9rem;
 }
 
 
