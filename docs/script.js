@@ -315,14 +315,14 @@ function createCarousel(games, store, sectionType) {
     carouselContent.appendChild(createGameCard(gameWithStore, sectionType === 'temporary'));
   });
   
-  // Add navigation buttons (initially hidden)
+  // Add navigation buttons
   const prevBtn = document.createElement("button");
-  prevBtn.className = "carousel-btn prev hidden";
+  prevBtn.className = "carousel-btn prev";
   prevBtn.innerHTML = "&lt;";
   prevBtn.onclick = () => scrollCarousel(carousel, -1);
   
   const nextBtn = document.createElement("button");
-  nextBtn.className = "carousel-btn next hidden";
+  nextBtn.className = "carousel-btn next";
   nextBtn.innerHTML = "&gt;";
   nextBtn.onclick = () => scrollCarousel(carousel, 1);
   
@@ -330,7 +330,7 @@ function createCarousel(games, store, sectionType) {
   carousel.appendChild(carouselContent);
   carousel.appendChild(nextBtn);
   
-  // Check overflow after rendering
+  // Initialize button states
   setTimeout(() => {
     checkCarouselOverflow(carousel);
   }, 100);
@@ -341,6 +341,11 @@ function createCarousel(games, store, sectionType) {
   });
   resizeObserver.observe(carouselContent);
   
+  // Add scroll event listener
+  carouselContent.addEventListener('scroll', () => {
+    updateButtonStates(carousel);
+  });
+  
   return carousel;
 }
 
@@ -349,12 +354,15 @@ function checkCarouselOverflow(carousel) {
   const prevBtn = carousel.querySelector('.prev');
   const nextBtn = carousel.querySelector('.next');
   
-  // Always show buttons but disable when not scrollable
-  const canScrollLeft = content.scrollLeft > 0;
-  const canScrollRight = content.scrollLeft + content.clientWidth < content.scrollWidth;
+  // Check if content overflows
+  const hasOverflow = content.scrollWidth > content.clientWidth;
   
-  prevBtn.classList.toggle('disabled', !canScrollLeft);
-  nextBtn.classList.toggle('disabled', !canScrollRight);
+  // Always show buttons but disable if no overflow
+  prevBtn.classList.toggle('disabled', !hasOverflow);
+  nextBtn.classList.toggle('disabled', !hasOverflow);
+  
+  // Update initial button states
+  updateButtonStates(carousel);
 }
 
 function updateButtonStates(carousel) {
@@ -363,17 +371,17 @@ function updateButtonStates(carousel) {
   const nextBtn = carousel.querySelector('.next');
   
   // Disable prev button if at start
-  prevBtn.classList.toggle('disabled', content.scrollLeft <= 0);
+  prevBtn.classList.toggle('disabled', content.scrollLeft <= 10); // Small buffer
   
   // Disable next button if at end
   nextBtn.classList.toggle('disabled', 
-    content.scrollLeft + content.clientWidth >= content.scrollWidth
+    content.scrollLeft + content.clientWidth >= content.scrollWidth - 10 // Small buffer
   );
 }
 
 function scrollCarousel(carousel, direction) {
   const content = carousel.querySelector('.carousel-content');
-  const scrollAmount = content.clientWidth * 0.8;
+  const scrollAmount = content.clientWidth * 0.8; // Scroll 80% of visible width
   
   content.scrollBy({
     left: direction * scrollAmount,
