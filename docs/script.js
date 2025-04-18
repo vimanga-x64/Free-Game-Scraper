@@ -168,18 +168,29 @@ function renderAllTemporaryGames(data, container) {
   
   // Combine all temporary games from all stores and platforms
   const tempGames = [];
+
+  console.log("Temporary games data:", data.temporary);
   
   // Add PC games
-  if (data.temporary && data.temporary.pc) {
+  if (data.temporary?.pc) {
     for (const store in data.temporary.pc) {
-      if (Array.isArray(data.temporary.pc[store])) {
-        tempGames.push(...data.temporary.pc[store].map(game => ({
-          ...game,
-          store: game.store || store // Ensure store is set properly
-        })));
+      const storeGames = data.temporary.pc[store];
+      if (Array.isArray(storeGames)) {
+        console.log(`Processing ${store} with ${storeGames.length} games`);
+        tempGames.push(...storeGames.map(game => {
+          // Normalize store names
+          const normalizedStore = normalizeStoreName(store);
+          return {
+            ...game,
+            store: game.store || normalizedStore
+          };
+        }));
       }
     }
   }
+
+
+  console.log("Combined temporary games:", tempGames);
   
   if (tempGames.length === 0) {
     container.innerHTML = `<p class="empty-msg">No temporary free games available</p>`;
@@ -228,6 +239,20 @@ function renderAllTemporaryGames(data, container) {
   // Update countdowns every minute
   updateCountdowns();
   setInterval(updateCountdowns, 60000);
+}
+
+function normalizeStoreName(store) {
+  const storeMap = {
+    'epic': 'Epic',
+    'epic_games': 'Epic',
+    'steam': 'Steam',
+    'gog': 'GOG',
+    'humble': 'Humble',
+    'humblebundle': 'Humble',
+    'itchio': 'Itch.io',
+    'origin': 'Origin'
+  };
+  return storeMap[store.toLowerCase()] || store;
 }
 
 function renderPermanentPCGames(data, container) {
@@ -415,23 +440,10 @@ function renderAllDiscountedGames(data, container) {
     gameList.className = "game-list";
 
     discountedGames[store].forEach(game => {
-      const gameCard = createGameCard({
+      gameList.appendChild(createGameCard({
         ...game,
         store: store // Ensure store is set properly
-      }, false);
-
-      if (game.originalPrice || game.finalPrice) {
-        const priceInfo = document.createElement("div");
-        priceInfo.className = "price-info";
-        priceInfo.innerHTML = `
-          ${game.originalPrice ? `<span class="original-price">$${game.originalPrice}</span>` : ''}
-          ${game.finalPrice ? `<span class="final-price">$${game.finalPrice}</span>` : ''}
-        `;
-        gameCard.querySelector('.game-info').prepend(priceInfo);
-      }
-      
-      gameList.appendChild(gameCard);
-
+      }, false));
     });
 
     storeSection.querySelector('.section-content').appendChild(gameList);
@@ -517,7 +529,7 @@ function createCollapsibleSection(title) {
 function createGameCard(game, isTemporary = false) {
   const item = document.createElement("div");
   item.className = "game-item";
-  item.tabIndex = 0; // Make focusable for keyboard navigation
+  item.tabIndex = 0;
   item.dataset.platforms = (game.platforms || []).join(',');
   item.dataset.store = game.store || '';
   
@@ -537,32 +549,48 @@ function createGameCard(game, isTemporary = false) {
     </span>
   `).join('');
   
+  // Only include price info if this is not a discounted game
+  const showPriceInfo = !game.discountPercentage && (game.originalPrice || game.finalPrice);
+  
   item.innerHTML = `
-  <div class="game-thumbnail">
-    <img class="lazyload" src="${IMAGE_PLACEHOLDER}" data-src="${game.thumbnail}" 
-         alt="${game.title} thumbnail" loading="lazy">
-    <div class="game-badges">
-      <span class="store-badge ${game.store?.toLowerCase()}">
-        ${storeIcon} ${game.store || 'Store'}
-      </span>
-      ${game.discountPercentage > 0 ? `
-        <span class="discount-badge">-${game.discountPercentage}%</span>
-      ` : ''}
-    </div>
-  </div>
-  <div class="game-info">
-    ${(game.originalPrice || game.finalPrice) ? `
-      <div class="price-info">
-        ${game.originalPrice ? `<span class="original-price">$${game.originalPrice.toFixed(2)}</span>` : ''}
-        ${game.finalPrice ? `<span class="final-price">$${game.finalPrice.toFixed(2)}</span>` : ''}
+    <div class="game-thumbnail">
+      <img class="lazyload" src="${IMAGE_PLACEHOLDER}" data-src="${game.thumbnail}" 
+           alt="${game.title} thumbnail" loading="lazy">
+      <div class="game-badges">
+        <span class="store-badge ${game.store?.toLowerCase()}">
+          ${storeIcon} ${game.store || 'Store'}
+        </span>
+        ${game.discountPercentage > 0 ? `
+          <span class="discount-badge">-${game.discountPercentage}%</span>
+        ` : ''}
       </div>
-    ` : ''}
-    <h3 class="game-title">${game.title}</h3>
-    <!-- rest of the existing HTML -->
-  </div>
-`;
-
-return item;
+    </div>
+    <div class="game-info">
+      ${showPriceInfo ? `
+        <div class="price-info">
+          ${game.originalPrice ? `<span class="original-price">$${game.originalPrice.toFixed(2)}</span>` : ''}
+          ${game.finalPrice ? `<span class="final-price">$${game.finalPrice.toFixed(2)}</span>` : ''}
+        </div>
+      ` : ''}
+      <h3 class="game-title">${game.title}</h3>
+      ${game.description ? `
+        <p class="game-description">${game.description}</p>
+      ` : ''}
+      <div class="platform-tags">
+        ${platforms}
+      </div>
+      ${game.end_date ? `
+        <div class="countdown" data-end-date="${game.end_date}">
+          <i class="fas fa-clock me-1" aria-hidden="true"></i> ${formatDate(game.end_date)}
+        </div>
+      ` : ''}
+      <button class="view-btn btn btn-primary w-100">
+        Claim Now <i class="fas fa-external-link-alt ms-1" aria-hidden="true"></i>
+      </button>
+    </div>
+  `;
+  
+  return item;
 }
 
 function showGameDetails(game) {
