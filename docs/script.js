@@ -166,63 +166,53 @@ function showGameType(type, data) {
 function renderAllTemporaryGames(data, container) {
   if (!container) return;
 
-  console.log("Full API response:", data);
+  console.log("Available stores in data:", Object.keys(data.temporary?.pc || {}));
   
   // Combine all temporary games from all stores and platforms
   const tempGames = [];
+  const seenGames = new Set(); // Track seen games to prevent duplicates
+  const requiredStores = ['epic_games', 'steam', 'gog', 'humble', 'itchio', 'origin'];
 
-  if (data.temporary && data.temporary.pc) {
-    console.log("Found temporary PC games structure");
-    
-    // Process each store in temporary.pc
-    for (const storeKey in data.temporary.pc) {
+  if (data.temporary?.pc) {
+    requiredStores.forEach(storeKey => {
       const storeGames = data.temporary.pc[storeKey];
-      console.log(`Processing store: ${storeKey} with ${storeGames?.length || 0} games`);
       
       if (Array.isArray(storeGames)) {
-        tempGames.push(...storeGames.map(game => ({
-          ...game,
-          // Normalize store name
-          store: normalizeStoreName(game.store || storeKey)
-        })));
+        console.log(`Processing ${storeKey} with ${storeGames.length} games`);
+        
+        storeGames.forEach(game => {
+          // Create unique identifier for each game
+          const gameId = `${game.title}-${game.store || storeKey}`.toLowerCase();
+          
+          if (!seenGames.has(gameId)) {
+            seenGames.add(gameId);
+            
+            tempGames.push({
+              ...game,
+              store: normalizeStoreName(game.store || storeKey)
+            });
+          } else {
+            console.log(`Duplicate detected: ${game.title} from ${storeKey}`);
+          }
+        });
+      } else {
+        console.warn(`No games array found for store: ${storeKey}`);
       }
-    }
+    });
   } else {
-    console.warn("No temporary.pc data found in API response");
+    console.error("No temporary.pc data found in API response");
   }
   
   // Debug log combined games
-  console.log("Combined temporary games:", tempGames);
+  console.log("Unique temporary games after processing:", tempGames);
   
   if (tempGames.length === 0) {
-    container.innerHTML = `<p class="empty-msg">No temporary free games available</p>`;
-    return;
-  }
-
-    
-  // Add PC games
-  if (data.temporary?.pc) {
-    for (const store in data.temporary.pc) {
-      const storeGames = data.temporary.pc[store];
-      if (Array.isArray(storeGames)) {
-        console.log(`Processing ${store} with ${storeGames.length} games`);
-        tempGames.push(...storeGames.map(game => {
-          // Normalize store names
-          const normalizedStore = normalizeStoreName(store);
-          return {
-            ...game,
-            store: game.store || normalizedStore
-          };
-        }));
-      }
-    }
-  }
-
-
-  console.log("Combined temporary games:", tempGames);
-  
-  if (tempGames.length === 0) {
-    container.innerHTML = `<p class="empty-msg">No temporary free games available</p>`;
+    container.innerHTML = `
+      <div class="empty-msg">
+        <i class="fas fa-info-circle me-2"></i>
+        No temporary free games available right now. Please check back later.
+      </div>
+    `;
     return;
   }
   
@@ -233,6 +223,7 @@ function renderAllTemporaryGames(data, container) {
     return dateA - dateB;
   });
 
+  // Show "Last Chance" section for expiring soon games
   const lastChanceGames = tempGames.filter(game => {
     return game.end_date && 
       (new Date(game.end_date) - new Date() < 24 * 60 * 60 * 1000);
@@ -271,8 +262,6 @@ function renderAllTemporaryGames(data, container) {
 }
 
 function normalizeStoreName(store) {
-  if (!store) return 'Unknown';
-  
   const storeMap = {
     'epic': 'Epic',
     'epic_games': 'Epic',
@@ -281,12 +270,9 @@ function normalizeStoreName(store) {
     'humble': 'Humble',
     'humblebundle': 'Humble',
     'itchio': 'Itch.io',
-    'origin': 'Origin',
-    'epic games': 'Epic'
+    'origin': 'Origin'
   };
-  
-  const lowerStore = store.toLowerCase().trim();
-  return storeMap[lowerStore] || store;
+  return storeMap[store?.toLowerCase()] || store;
 }
 
 function renderPermanentPCGames(data, container) {

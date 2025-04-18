@@ -1,7 +1,10 @@
 import requests
 from bs4 import BeautifulSoup
 import json
+import os
 from datetime import datetime, timedelta
+
+BACKUP_JSON_PATH = 'free_games_backup.json'
 
 def get_permanent_free_games():
     try:
@@ -17,16 +20,80 @@ def get_permanent_free_games():
         return { "pc": {} }  # Only return PC games structure
 
 def get_temporary_free_games():
-    return {
-        "pc": {  # Only PC games
-            "epic_games": get_epic_free_games(),
-            "steam": get_steam_free_games(),
-            "gog": get_gog_free_games(),
-            "humble": get_humble_free_games(),
-            "itchio": get_itchio_free_games(),
-            "origin": get_origin_free_games()
+    try:
+        # Try CheapShark API first for Steam, GOG, etc.
+        cheap_shark_games = get_cheap_shark_free_games()
+        
+        # Get Epic Games directly from your scraper
+        epic_games = get_epic_free_games()
+        
+        # Combine results
+        result = {
+            "pc": {
+                "epic_games": epic_games,
+                "steam": cheap_shark_games.get('steam', []),
+                "gog": cheap_shark_games.get('gog', []),
+                "humble": cheap_shark_games.get('humble', []),
+                "itchio": get_itchio_free_games()  # Keep direct scraper as fallback
+            }
         }
-    }
+        
+        # If any store has no games, try loading from backup
+        if any(not games for games in result['pc'].values()):
+            backup_data = load_backup_data()
+            for store in result['pc']:
+                if not result['pc'][store]:
+                    result['pc'][store] = backup_data.get(store, [])
+        
+        return result
+        
+    except Exception as e:
+        print(f"Error in get_temporary_free_games: {str(e)}")
+        # Fallback to backup data if everything fails
+        return load_backup_data()
+    
+def get_cheap_shark_free_games():
+    try:
+        url = "https://www.cheapshark.com/api/1.0/deals?upperPrice=0&onSale=1"
+        response = requests.get(url, timeout=15)
+        deals = response.json()
+        
+        games_by_store = {"steam": [], "gog": [], "humble": []}
+        
+        for deal in deals:
+            game = {
+                "title": deal["title"],
+                "link": f"https://www.cheapshark.com/redirect?dealID={deal['dealID']}",
+                "thumbnail": deal["thumb"],
+                "store": deal["storeID"].lower(),
+                "end_date": (datetime.utcnow() + timedelta(days=3)).isoformat()
+            }
+            
+            # Map CheapShark store IDs to our store names
+            store_map = {
+                "1": "steam",
+                "7": "gog",
+                "11": "humble"
+            }
+            
+            if deal["storeID"] in store_map:
+                games_by_store[store_map[deal["storeID"]]].append(game)
+        
+        return games_by_store
+        
+    except Exception as e:
+        print(f"CheapShark API error: {str(e)}")
+        return {}
+    
+def load_backup_data():
+    try:
+        if os.path.exists(BACKUP_JSON_PATH):
+            with open(BACKUP_JSON_PATH, 'r') as f:
+                return json.load(f)
+        return {"pc": {"epic_games": [], "steam": [], "gog": [], "humble": [], "itchio": []}}
+    except Exception as e:
+        print(f"Error loading backup data: {str(e)}")
+        return {"pc": {"epic_games": [], "steam": [], "gog": [], "humble": [], "itchio": []}}
 
 
 def optimize_thumbnail_url(url):

@@ -1,0 +1,25 @@
+{
+  "pc": {
+    "epic_games": [],
+    "steam": [
+      {
+        "title": "Example Steam Game",
+        "link": "https://store.steampowered.com/app/123",
+        "thumbnail": "https://cdn.cloudflare.steamstatic.com/steam/apps/123/header.jpg",
+        "store": "steam",
+        "end_date": "2023-12-31T00:00:00"
+      }
+    ],
+    "gog": [
+      {
+        "title": "Example GOG Game",
+        "link": "https://www.gog.com/game/example",
+        "thumbnail": "https://images.gog.com/123.jpg",
+        "store": "gog",
+        "end_date": "2023-12-31T00:00:00"
+      }
+    ],
+    "humble": [],
+    "itchio": []
+  }
+}
