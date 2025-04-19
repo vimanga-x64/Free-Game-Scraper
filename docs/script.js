@@ -194,7 +194,8 @@ function renderAllTemporaryGames(data, container) {
               thumbnail: game.thumbnail,
               store: normalizeStoreName(game.store || storeKey),
               platforms: game.platforms || ['windows'], // Default to windows if not specified
-              end_date: game.end_date || (datetime.utcnow() + timedelta(days=3)).isoformat()
+              end_date: game.end_date || new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+
             };
             
             tempGames.push(normalizedGame);
