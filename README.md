@@ -2,6 +2,8 @@
 
 A web application that aggreagtes free PC games from various platforms (Epic Games, Steam, GOG, Humble Bundle, etc.) in one place. Never miss a free game deal again!
 
+![Screenshot](./public/screenshot.png)
+
 
 # Features
 
